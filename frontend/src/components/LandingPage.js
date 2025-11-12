@@ -1,13 +1,182 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 const LandingPage = ({ onGetStarted }) => {
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [visibleElements, setVisibleElements] = useState(new Set());
+  const [activeUsers, setActiveUsers] = useState(0);
+  const observerRef = useRef(null);
+
+  // Counting animation for active users
+  useEffect(() => {
+    const target = 10000;
+    const duration = 2000;
+    const startTime = Date.now();
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const count = Math.floor(progress * target);
+      setActiveUsers(count);
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    animate();
+  }, []);
+
+  // Intersection Observer for scroll animations
+  useEffect(() => {
+    const options = {
+      threshold: 0.15,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const callback = (entries) => {
+      entries.forEach(entry => {
+        // Always trigger animation when element is visible
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-in');
+          entry.target.classList.remove('animate-out');
+        } else {
+          // Reset animation when element leaves view (optional)
+          entry.target.classList.add('animate-out');
+          entry.target.classList.remove('animate-in');
+        }
+      });
+    };
+
+    observerRef.current = new IntersectionObserver(callback, options);
+
+    // Wait for DOM to be ready
+    const timeout = setTimeout(() => {
+      const animatedElements = document.querySelectorAll('[data-scroll-animate]');
+      animatedElements.forEach((el, index) => {
+        if (!el.id) {
+          el.id = `animated-element-${index}`;
+        }
+        // Add initial hidden state
+        el.classList.add('animate-out');
+        observerRef.current.observe(el);
+      });
+    }, 100);
+
+    return () => {
+      clearTimeout(timeout);
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  // Add CSS for animations
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      [data-scroll-animate].animate-out {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      
+      [data-scroll-animate].animate-in {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 1s ease-out, transform 1s ease-out;
+      }
+
+      /* Feature Cards */
+      [data-scroll-animate] .feature-card {
+        transition: opacity 1s ease-out, transform 1s ease-out;
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      [data-scroll-animate].animate-in .feature-card {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Benefit Items */
+      [data-scroll-animate] .benefit-item {
+        transition: opacity 1s ease-out, transform 1s ease-out;
+        opacity: 0;
+      }
+      [data-scroll-animate].animate-in .benefit-item:nth-child(odd) {
+        transform: translateX(-30px);
+        opacity: 1;
+      }
+      [data-scroll-animate].animate-in .benefit-item:nth-child(even) {
+        transform: translateX(30px);
+        opacity: 1;
+      }
+
+      /* Stat Items */
+      [data-scroll-animate] .stat-item {
+        transition: opacity 1s ease-out, transform 1s ease-out;
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      [data-scroll-animate].animate-in .stat-item {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* FAQ */
+      [data-scroll-animate] .faq-item {
+        transition: opacity 0.9s ease-out, transform 0.9s ease-out;
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      [data-scroll-animate].animate-in .faq-item {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Testimonial */
+      [data-scroll-animate] .testimonial-card {
+        transition: opacity 0.9s ease-out, transform 0.9s ease-out;
+        opacity: 0;
+        transform: scale(0.97) translateY(10px);
+      }
+      [data-scroll-animate].animate-in .testimonial-card {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+
+      /* Developer section */
+      [data-scroll-animate] .developer-content {
+        transition: opacity 0.9s ease-out, transform 0.9s ease-out;
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      [data-scroll-animate].animate-in .developer-content {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      /* CTA */
+      [data-scroll-animate] .cta-text, [data-scroll-animate] .cta-button {
+        transition: opacity 0.9s ease-out, transform 0.9s ease-out;
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      [data-scroll-animate].animate-in .cta-text, [data-scroll-animate].animate-in .cta-button {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
 
   const testimonials = [
     {
       name: "Sarah Johnson",
       role: "Marketing Manager",
-      content: "Spendwise has completely transformed how I manage my finances. The AI insights help me make smarter spending decisions every day.",
+      content: "CoinFlow has completely transformed how I manage my finances. The AI insights help me make smarter spending decisions every day.",
       avatar: "👩‍💼"
     },
     {
@@ -19,7 +188,7 @@ const LandingPage = ({ onGetStarted }) => {
     {
       name: "Emily Rodriguez",
       role: "Student",
-      content: "As a student on a tight budget, Spendwise helps me track every penny. The daily tracking feature keeps me accountable.",
+      content: "As a student on a tight budget, CoinFlow helps me track every penny. The daily tracking feature keeps me accountable.",
       avatar: "👩‍🎓"
     }
   ];
@@ -28,45 +197,45 @@ const LandingPage = ({ onGetStarted }) => {
     {
       icon: "🤖",
       title: "AI-Powered Intelligence",
-      description: "Advanced machine learning algorithms analyze your spending patterns and provide personalized financial recommendations.",
+      description: "Advanced machine learning algorithms analyze your spending patterns and provide personalized financial recommendations with 95% accuracy.",
       gradient: "from-blue-500 to-cyan-500"
     },
     {
       icon: "⚡",
       title: "Real-time Analytics", 
-      description: "Live dashboard with interactive charts, spending trends, and predictive insights to optimize your financial decisions.",
+      description: "Live dashboard with interactive charts, spending trends, and predictive insights to optimize your financial decisions instantly.",
       gradient: "from-indigo-500 to-purple-500"
     },
     {
       icon: "🎯",
       title: "Smart Goal Tracking",
-      description: "Set intelligent financial goals with milestone tracking, progress visualization, and achievement rewards.",
+      description: "Set intelligent financial goals with milestone tracking, progress visualization, and achievement rewards to stay motivated.",
       gradient: "from-purple-500 to-pink-500"
     },
     {
       icon: "🔐",
       title: "Bank-Level Security",
-      description: "Enterprise-grade encryption, biometric authentication, and secure cloud infrastructure protect your data.",
+      description: "Enterprise-grade encryption, biometric authentication, and secure cloud infrastructure protect your financial data 24/7.",
       gradient: "from-green-500 to-teal-500"
     },
     {
       icon: "📱",
       title: "Cross-Platform Sync",
-      description: "Seamless synchronization across all devices with offline capability and automatic backup.",
+      description: "Seamless synchronization across all devices with offline capability, automatic backup, and instant cloud updates.",
       gradient: "from-orange-500 to-red-500"
     },
     {
       icon: "✨",
       title: "Premium Experience",
-      description: "Beautiful, intuitive interface with customizable themes, dark mode, and accessibility features.",
+      description: "Beautiful, intuitive interface with customizable themes, dark mode, advanced analytics, and complete accessibility features.",
       gradient: "from-violet-500 to-purple-500"
     }
   ];
 
   const faqs = [
     {
-      question: "Is Spendwise free to use?",
-      answer: "Yes! Spendwise offers a comprehensive free plan that includes expense tracking, basic analytics, and budget management. Premium features are available for advanced users."
+      question: "Is CoinFlow free to use?",
+      answer: "Yes! CoinFlow offers a comprehensive free plan that includes expense tracking, basic analytics, and budget management. Premium features are available for advanced users."
     },
     {
       question: "How secure is my financial data?",
@@ -74,11 +243,11 @@ const LandingPage = ({ onGetStarted }) => {
     },
     {
       question: "Can I connect my bank accounts?",
-      answer: "Currently, Spendwise focuses on manual expense entry to give you full control over your data. We're working on secure bank integration for future releases."
+      answer: "Currently, CoinFlow focuses on manual expense entry to give you full control over your data. We're working on secure bank integration for future releases."
     },
     {
-      question: "Does Spendwise work on mobile devices?",
-      answer: "Absolutely! Spendwise is fully responsive and works seamlessly on all devices - desktop, tablet, and mobile phones."
+      question: "Does CoinFlow work on mobile devices?",
+      answer: "Absolutely! CoinFlow is fully responsive and works seamlessly on all devices - desktop, tablet, and mobile phones."
     },
     {
       question: "What makes the AI insights special?",
@@ -288,7 +457,7 @@ const LandingPage = ({ onGetStarted }) => {
       </section>
 
       {/* Why CoinFlow Section */}
-      <section id="features" className="bg-gradient-to-b from-white to-gray-50 py-12 md:py-24">
+      <section id="features-section" className="bg-gradient-to-b from-white to-gray-50 py-12 md:py-24" data-scroll-animate>
         <div className="max-w-7xl mx-auto px-3 md:px-4">
           <div className="text-center mb-12 md:mb-20">
             <div className="inline-flex items-center bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium mb-4 md:mb-6">
@@ -307,7 +476,11 @@ const LandingPage = ({ onGetStarted }) => {
           
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-8">
             {features.map((feature, index) => (
-              <div key={index} className="group relative bg-white p-4 md:p-8 rounded-lg md:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 border border-gray-100">
+              <div 
+                key={index} 
+                className="feature-card group relative bg-white p-4 md:p-8 rounded-lg md:rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-700 hover:-translate-y-2 border border-gray-100"
+                style={{transitionDelay: `${index * 100}ms`}}
+              >
                 {/* Background gradient on hover */}
                 <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} opacity-0 group-hover:opacity-5 rounded-lg md:rounded-2xl transition-opacity duration-500`}></div>
                 
@@ -338,12 +511,104 @@ const LandingPage = ({ onGetStarted }) => {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section id="testimonials" className="py-12 md:py-20 bg-gradient-to-br from-blue-50 to-purple-50">
+      {/* Statistics Section */}
+      <section id="stats-section" className="py-12 md:py-20 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 relative overflow-hidden" data-scroll-animate>
+        {/* Background elements */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-3 md:px-4 relative z-10">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+            <div className="stat-item text-center text-white">
+              <div className="text-3xl md:text-5xl font-black mb-2">{activeUsers.toLocaleString()}+</div>
+              <p className="text-sm md:text-lg opacity-90">Active Users</p>
+              <p className="text-xs md:text-sm opacity-70 mt-1">Growing daily</p>
+            </div>
+            <div className="stat-item text-center text-white" style={{transitionDelay: '100ms'}}>
+              <div className="text-3xl md:text-5xl font-black mb-2">$2.5B</div>
+              <p className="text-sm md:text-lg opacity-90">Tracked Transactions</p>
+              <p className="text-xs md:text-sm opacity-70 mt-1">And counting</p>
+            </div>
+            <div className="stat-item text-center text-white" style={{transitionDelay: '200ms'}}>
+              <div className="text-3xl md:text-5xl font-black mb-2">4.9★</div>
+              <p className="text-sm md:text-lg opacity-90">Average Rating</p>
+              <p className="text-xs md:text-sm opacity-70 mt-1">1000+ reviews</p>
+            </div>
+            <div className="stat-item text-center text-white" style={{transitionDelay: '300ms'}}>
+              <div className="text-3xl md:text-5xl font-black mb-2">99.9%</div>
+              <p className="text-sm md:text-lg opacity-90">Uptime</p>
+              <p className="text-xs md:text-sm opacity-70 mt-1">Guaranteed</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits Section */}
+      <section id="benefits-section" className="py-12 md:py-20 bg-white" data-scroll-animate>
+        <div className="max-w-7xl mx-auto px-3 md:px-4">
+          <div className="text-center mb-12 md:mb-16">
+            <h2 className="text-2xl md:text-4xl font-black text-gray-900 mb-4 md:mb-6">
+              Why Choose
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent"> CoinFlow</span>?
+            </h2>
+            <p className="text-sm md:text-xl text-gray-600 max-w-3xl mx-auto">
+              More than just an expense tracker - it's your personal financial coach
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+            {[
+              {
+                icon: '💰',
+                title: 'Save More Money',
+                description: 'CoinFlow users save an average of $200/month by identifying spending leaks and optimizing their budget.',
+                gradient: 'from-green-500 to-emerald-600'
+              },
+              {
+                icon: '⏱️',
+                title: 'Save Time',
+                description: 'Automated tracking and smart categorization save you 5+ hours per month on financial management.',
+                gradient: 'from-blue-500 to-indigo-600'
+              },
+              {
+                icon: '🎓',
+                title: 'Financial Education',
+                description: 'Learn financial literacy through personalized insights and educational resources within the app.',
+                gradient: 'from-purple-500 to-pink-600'
+              },
+              {
+                icon: '🚀',
+                title: 'Achieve Your Goals',
+                description: 'Turn financial dreams into reality with smart goal setting, tracking, and AI-powered recommendations.',
+                gradient: 'from-orange-500 to-red-600'
+              }
+            ].map((benefit, index) => (
+              <div 
+                key={index}
+                className="benefit-item flex gap-4 md:gap-6 transition-all duration-1000"
+                style={{transitionDelay: `${index * 100}ms`}}
+              >
+                <div className="flex-shrink-0">
+                  <div className={`flex items-center justify-center h-12 w-12 md:h-16 md:w-16 rounded-lg md:rounded-2xl bg-gradient-to-br ${benefit.gradient} text-white`}>
+                    <span className="text-xl md:text-2xl">{benefit.icon}</span>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-base md:text-xl font-bold text-gray-900 mb-2">{benefit.title}</h3>
+                  <p className="text-xs md:text-base text-gray-600">{benefit.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      <section id="testimonials" className="py-12 md:py-20 bg-gradient-to-br from-blue-50 to-purple-50" data-scroll-animate>
         <div className="max-w-4xl mx-auto px-3 md:px-4 text-center">
           <h2 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2 md:mb-4">What Our Users Say</h2>
           <p className="text-base md:text-xl text-gray-600 mb-8 md:mb-16">
-            Join thousands of satisfied users who've transformed their financial habits with Spendwise.
+            Join thousands of satisfied users who've transformed their financial habits with CoinFlow.
           </p>
           
           <div className="relative bg-white rounded-xl md:rounded-2xl shadow-xl p-6 md:p-8">
@@ -465,7 +730,7 @@ const LandingPage = ({ onGetStarted }) => {
       </section>
 
       {/* FAQ Section */}
-      <section id="faq" className="py-12 md:py-20 bg-white">
+      <section id="faq" className="py-12 md:py-20 bg-white" data-scroll-animate>
         <div className="max-w-4xl mx-auto px-3 md:px-4">
           <div className="text-center mb-12 md:mb-16">
             <h2 className="text-2xl md:text-4xl font-bold text-gray-800 mb-2 md:mb-4">Frequently Asked Questions</h2>
@@ -499,7 +764,7 @@ const LandingPage = ({ onGetStarted }) => {
       </section>
 
       {/* Developer Section */}
-      <section id="developer" className="py-12 md:py-24 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+      <section id="developer" className="py-12 md:py-24 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50" data-scroll-animate>
         <div className="max-w-6xl mx-auto px-3 md:px-4">
           <div className="text-center mb-12 md:mb-16">
             <div className="inline-flex items-center bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-xs md:text-sm font-medium mb-4 md:mb-6">

@@ -615,9 +615,11 @@ const deleteExpense = async (req, res) => {
  */
 const updateGroup = async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, currency } = req.body;
 
-    const group = await Group.findById(req.params.id);
+    // Populate members first to get proper user info
+    const group = await Group.findById(req.params.id)
+      .populate('members.user', 'firstName lastName username');
 
     if (!group) {
       return res.status(404).json({
@@ -626,14 +628,29 @@ const updateGroup = async (req, res) => {
       });
     }
 
-    // Check if user is admin
-    const member = group.members.find(m => m.user.toString() === req.user._id.toString());
+    // Check if user is admin - compare user IDs properly
+    const member = group.members.find(m => {
+      const memberUserId = typeof m.user === 'object' ? m.user._id.toString() : m.user.toString();
+      return memberUserId === req.user._id.toString();
+    });
 
     if (!member || member.role !== 'admin') {
       return res.status(403).json({
         success: false,
         message: 'Only admin can update group'
       });
+    }
+
+    // Validate currency if provided
+    if (currency) {
+      const validCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR', 'LKR'];
+      if (!validCurrencies.includes(currency)) {
+        return res.status(400).json({
+          success: false,
+          message: `Invalid currency. Supported currencies are: ${validCurrencies.join(', ')}`
+        });
+      }
+      group.currency = currency;
     }
 
     if (name) group.name = name.trim();
@@ -643,7 +660,9 @@ const updateGroup = async (req, res) => {
 
     const updatedGroup = await Group.findById(group._id)
       .populate('creator', 'firstName lastName username')
-      .populate('members.user', 'firstName lastName username');
+      .populate('members.user', 'firstName lastName username')
+      .populate('expenses.paidBy', 'firstName lastName username')
+      .populate('expenses.splitAmong.user', 'firstName lastName username');
 
     res.json({
       success: true,

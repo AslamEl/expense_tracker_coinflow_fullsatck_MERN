@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const SalaryFormModal = ({ monthlySalary, onSalaryUpdate, onClose }) => {
+  const { currencySymbol } = useCurrency();
   const [tempSalary, setTempSalary] = useState(monthlySalary);
   const [saving, setSaving] = useState(false);
 
@@ -37,11 +39,11 @@ const SalaryFormModal = ({ monthlySalary, onSalaryUpdate, onClose }) => {
       <div className="group">
         <label htmlFor="income" className="flex items-center text-xs md:text-sm font-bold text-gray-800 mb-2 md:mb-3">
           <span className="w-5 md:w-6 h-5 md:h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mr-2 text-white text-xs">💰</span>
-          Monthly Salary ($)
+          Monthly Salary ({currencySymbol})
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 md:pl-6 flex items-center">
-            <span className="text-gray-500 font-semibold text-base md:text-lg">$</span>
+            <span className="text-gray-500 font-semibold text-base md:text-lg">{currencySymbol}</span>
           </div>
           <input
             type="number"

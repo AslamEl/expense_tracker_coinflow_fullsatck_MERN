@@ -1,8 +1,9 @@
 // AI Recommendation Engine
 class ExpenseAI {
-  constructor(expenses, monthlyIncome = 0) {
+  constructor(expenses, monthlyIncome = 0, incomes = []) {
     this.expenses = expenses;
     this.monthlyIncome = monthlyIncome;
+    this.incomes = incomes;
     this.categories = ['Food', 'Transport', 'Shopping', 'Bills', 'Education', 'Travel', 'Other'];
   }
 
@@ -21,10 +22,14 @@ class ExpenseAI {
       'Food'
     );
 
+    // Calculate total income from all sources (salary + incomes)
+    const incomeFromTransactions = this.incomes.reduce((sum, inc) => sum + inc.amount, 0);
+    const totalMonthlyIncome = this.monthlyIncome + incomeFromTransactions;
+
     // Calculate monthly totals
     const monthlyExpenses = total * (30 / Math.max(this.getActiveDays(), 1));
-    const expenseRatio = this.monthlyIncome > 0 ? (monthlyExpenses / this.monthlyIncome) * 100 : 0;
-    const savingsRate = this.monthlyIncome > 0 ? ((this.monthlyIncome - monthlyExpenses) / this.monthlyIncome) * 100 : 0;
+    const expenseRatio = totalMonthlyIncome > 0 ? (monthlyExpenses / totalMonthlyIncome) * 100 : 0;
+    const savingsRate = totalMonthlyIncome > 0 ? ((totalMonthlyIncome - monthlyExpenses) / totalMonthlyIncome) * 100 : 0;
 
     return {
       total,
@@ -35,7 +40,9 @@ class ExpenseAI {
       monthlyExpenses,
       expenseRatio,
       savingsRate,
-      monthlyIncome: this.monthlyIncome
+      monthlyIncome: this.monthlyIncome,
+      totalIncome: totalMonthlyIncome,
+      incomeFromTransactions: incomeFromTransactions
     };
   }
 
@@ -78,15 +85,19 @@ class ExpenseAI {
     const stats = this.getSpendingStats();
     const recommendations = [];
 
+    // Calculate total income from all sources (salary + incomes)
+    const incomeFromTransactions = this.incomes.reduce((sum, inc) => sum + inc.amount, 0);
+    const totalMonthlyIncome = this.monthlyIncome + incomeFromTransactions;
+    
     // Use actual monthly income if available, otherwise use extrapolated current spending
-    const allocatedBudget = this.monthlyIncome > 0 ? this.monthlyIncome : (stats.total * (30 / Math.max(this.getActiveDays(), 1)));
+    const allocatedBudget = totalMonthlyIncome > 0 ? totalMonthlyIncome : (stats.total * (30 / Math.max(this.getActiveDays(), 1)));
     
     recommendations.push({
       type: 'budget_allocation',
       title: 'Smart Budget Allocation',
-      guidelines: this.monthlyIncome > 0 
-        ? 'Based on your actual monthly income using the 50/30/20 budgeting rule'
-        : 'Based on your current spending patterns (add salary for accurate allocation)',
+      guidelines: totalMonthlyIncome > 0 
+        ? 'Based on your actual monthly income (salary + other sources) using the 50/30/20 budgeting rule'
+        : 'Based on your current spending patterns (add income for accurate allocation)',
       suggestions: [
         {
           category: 'Bills',
@@ -240,13 +251,19 @@ class ExpenseAI {
 
     const trend = recentAvg > olderAvg ? 'increasing' : 'decreasing';
 
+    // Calculate total income from all sources (salary + incomes)
+    const incomeFromTransactions = this.incomes.reduce((sum, inc) => sum + inc.amount, 0);
+    const totalMonthlyIncome = this.monthlyIncome + incomeFromTransactions;
+
     return {
       predicted: Math.round(predictedMonthly),
       trend,
       trendPercentage: Math.round(Math.min(trendPercentage, 999)), // Cap at 999% to avoid extreme values
       confidence: this.expenses.length > 10 ? 'high' : 'medium',
       monthlyIncome: this.monthlyIncome,
-      predictedRatio: this.monthlyIncome > 0 ? ((predictedMonthly / this.monthlyIncome) * 100) : 0
+      totalIncome: totalMonthlyIncome,
+      incomeFromTransactions: incomeFromTransactions,
+      predictedRatio: totalMonthlyIncome > 0 ? ((predictedMonthly / totalMonthlyIncome) * 100) : 0
     };
   }
 
@@ -267,8 +284,9 @@ class ExpenseAI {
         type: 'high_daily_spending',
         severity: 'warning',
         title: '⚠️ High Spending Alert',
-        message: `You've spent $${todayTotal.toFixed(2)} today, which is above your average`,
-        action: 'Consider reviewing your purchases for the rest of the day'
+        message: `You've spent ${todayTotal.toFixed(2)} today, which is above your average`,
+        action: 'Consider reviewing your purchases for the rest of the day',
+        amount: todayTotal
       });
     }
 
@@ -297,11 +315,15 @@ class ExpenseAI {
   calculateFinancialHealth() {
     const stats = this.getSpendingStats();
     
-    if (this.monthlyIncome <= 0) {
+    // Calculate total income from all sources (salary + incomes)
+    const incomeFromTransactions = this.incomes.reduce((sum, inc) => sum + inc.amount, 0);
+    const totalMonthlyIncome = this.monthlyIncome + incomeFromTransactions;
+    
+    if (totalMonthlyIncome <= 0) {
       return {
         score: 0,
         grade: 'Unknown',
-        status: 'Add your monthly salary to get your financial health score',
+        status: 'Add your income sources to get your financial health score',
         color: 'gray'
       };
     }
@@ -352,21 +374,21 @@ class ExpenseAI {
       score: Math.round(score),
       ...gradeInfo,
       factors,
-      recommendations: this.getHealthRecommendations(score, stats)
+      recommendations: this.getHealthRecommendations(score, stats, totalMonthlyIncome)
     };
   }
 
   // Get health-based recommendations
-  getHealthRecommendations(score, stats) {
+  getHealthRecommendations(score, stats, totalMonthlyIncome = 0) {
     const recommendations = [];
 
     // Only provide income-based recommendations if income is set
-    if (this.monthlyIncome <= 0) {
+    if (totalMonthlyIncome <= 0) {
       recommendations.push({
         priority: 'high',
-        title: 'Add Your Monthly Income',
-        message: 'Set your monthly salary to get accurate budget allocation and financial health analysis.',
-        action: 'Add your income in settings to unlock personalized recommendations'
+        title: 'Add Your Income',
+        message: 'Set your monthly salary or add income transactions to get accurate budget allocation and financial health analysis.',
+        action: 'Add your income in settings or record income transactions to unlock personalized recommendations'
       });
       return recommendations;
     }

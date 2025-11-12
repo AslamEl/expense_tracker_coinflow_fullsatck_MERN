@@ -1,11 +1,9 @@
 import React from 'react';
-import Dashboard from './Dashboard';
 import ActionButtons from './ActionButtons';
 import BalanceSummary from './BalanceSummary';
 import TotalExpenses from './TotalExpenses';
 import AIInsights from './AIInsights';
 import Analytics from './Analytics';
-import ExpenseList from './ExpenseList';
 import AIAssistant from './AIAssistant';
 
 const Home = ({ 
@@ -13,8 +11,6 @@ const Home = ({
   incomes, 
   monthlySalary, 
   groups, 
-  onDeleteExpense, 
-  loading, 
   onAddExpense, 
   onAddIncome, 
   onSetSalary 
@@ -70,14 +66,6 @@ const Home = ({
         </div>
       </div>
 
-      {/* Dashboard Section */}
-      <Dashboard 
-        expenses={expenses}
-        incomes={incomes}
-        monthlySalary={monthlySalary}
-        groups={groups}
-      />
-
       {/* Balance Summary */}
       <BalanceSummary 
         monthlySalary={monthlySalary}
@@ -123,52 +111,12 @@ const Home = ({
       </div>
 
       {/* AI-Powered Insights */}
-      <AIInsights expenses={expenses} monthlyIncome={monthlySalary} />
+      <AIInsights expenses={expenses} incomes={incomes} monthlyIncome={monthlySalary} />
 
       {/* Analytics Dashboard */}
       <div data-section="analytics">
         <Analytics expenses={expenses} monthlyIncome={monthlySalary} />
       </div>
-
-      {/* Premium Section Divider */}
-      <div className="relative my-12 md:my-16">
-        <div className="absolute inset-0 flex items-center" aria-hidden="true">
-          <div className="w-full border-t border-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-        </div>
-        <div className="relative flex justify-center">
-          <div className="bg-white/90 backdrop-blur-xl rounded-2xl md:rounded-3xl px-3 md:px-8 py-4 md:py-6 shadow-2xl border border-white/30 relative overflow-hidden group">
-            {/* Glassmorphism overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent"></div>
-            <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-indigo-400/30 to-purple-500/30 rounded-full blur-lg group-hover:blur-xl transition-all duration-300"></div>
-            
-            <div className="relative z-10 flex flex-col sm:flex-row items-center gap-3 md:gap-4">
-              <div className="w-10 md:w-12 h-10 md:h-12 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-lg md:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
-                <svg className="w-5 md:w-6 h-5 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-              <div className="text-center sm:text-left flex-1">
-                <h3 className="text-base md:text-xl font-black bg-gradient-to-r from-gray-900 via-indigo-800 to-purple-900 bg-clip-text text-transparent">
-                  Recent Activity
-                </h3>
-                <p className="text-xs md:text-sm text-gray-600 font-medium">Your latest financial transactions</p>
-              </div>
-              <div className="w-10 md:w-12 h-10 md:h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg md:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
-                <svg className="w-5 md:w-6 h-5 md:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Expense List */}
-      <ExpenseList 
-        expenses={expenses} 
-        onDeleteExpense={onDeleteExpense}
-        loading={loading}
-      />
 
       {/* Floating AI Assistant */}
       <AIAssistant expenses={expenses} monthlyIncome={monthlySalary} />

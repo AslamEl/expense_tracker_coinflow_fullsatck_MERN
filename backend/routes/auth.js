@@ -12,7 +12,7 @@ const auth = authenticateToken;
 // @access  Public
 router.post('/signup', async (req, res) => {
   try {
-    const { username, email, password, firstName, lastName, monthlySalary } = req.body;
+    const { username, email, password, firstName, lastName, monthlySalary, currency } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findByEmailOrUsername(email);
@@ -30,7 +30,8 @@ router.post('/signup', async (req, res) => {
       password,
       firstName,
       lastName,
-      monthlySalary: monthlySalary || 0
+      monthlySalary: monthlySalary || 0,
+      currency: currency || 'USD'
     });
 
     await user.save();
@@ -255,7 +256,7 @@ router.post('/change-password', authenticateToken, async (req, res) => {
 // @access  Private
 router.put('/update-profile', authenticateToken, async (req, res) => {
   try {
-    const { firstName, lastName, email, username, monthlySalary } = req.body;
+    const { firstName, lastName, email, username, monthlySalary, currency } = req.body;
 
     // Check if email or username is being changed and already exists
     if (email && email !== req.user.email) {
@@ -286,6 +287,7 @@ router.put('/update-profile', authenticateToken, async (req, res) => {
     if (email !== undefined) user.email = email;
     if (username !== undefined) user.username = username;
     if (monthlySalary !== undefined) user.monthlySalary = monthlySalary;
+    if (currency !== undefined) user.currency = currency;
     
     await user.save();
 

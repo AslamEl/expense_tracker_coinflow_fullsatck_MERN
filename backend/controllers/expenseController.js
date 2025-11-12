@@ -98,8 +98,72 @@ const deleteExpense = async (req, res) => {
   }
 };
 
+// @desc    Update expense
+// @route   PUT /api/expenses/:id
+// @access  Private
+const updateExpense = async (req, res) => {
+  try {
+    const { description, amount, category } = req.body;
+
+    // Validate required fields
+    if (!description || !amount || !category) {
+      return res.status(400).json({
+        message: 'Please provide description, amount, and category'
+      });
+    }
+
+    // Validate amount is a positive number
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({
+        message: 'Amount must be a positive number'
+      });
+    }
+
+    // Validate category
+    const validCategories = ['Food', 'Transport', 'Shopping', 'Bills', 'Education', 'Travel', 'Other'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        message: 'Category must be one of: Food, Transport, Shopping, Bills, Education, Travel, Other'
+      });
+    }
+
+    // Find and check ownership
+    const expense = await Expense.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!expense) {
+      return res.status(404).json({ message: 'Expense not found or unauthorized' });
+    }
+
+    // Update the expense
+    expense.description = description.trim();
+    expense.amount = parseFloat(amount);
+    expense.category = category;
+    
+    await expense.save();
+    await expense.populate('user', 'firstName lastName username');
+
+    res.json(expense);
+  } catch (error) {
+    console.error('Error updating expense:', error);
+
+    // Handle invalid ObjectId format
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    res.status(500).json({ 
+      message: 'Server Error', 
+      error: error.message 
+    });
+  }
+};
+
 module.exports = {
   getExpenses,
   createExpense,
-  deleteExpense
+  deleteExpense,
+  updateExpense
 };

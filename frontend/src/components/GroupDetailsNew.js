@@ -18,6 +18,26 @@ const GroupDetails = ({ group: initialGroup, onBack }) => {
   const [activeTab, setActiveTab] = useState('expenses');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
+  const [showCurrencyModal, setShowCurrencyModal] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState(initialGroup?.currency || 'USD');
+  const [editName, setEditName] = useState(false);
+  const [editDescription, setEditDescription] = useState(false);
+  const [updatedName, setUpdatedName] = useState(initialGroup?.name || '');
+  const [updatedDescription, setUpdatedDescription] = useState(initialGroup?.description || '');
+
+  const supportedCurrencies = ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR', 'LKR'];
+  const currencyNames = {
+    'USD': 'US Dollar',
+    'EUR': 'Euro',
+    'GBP': 'British Pound',
+    'JPY': 'Japanese Yen',
+    'AUD': 'Australian Dollar',
+    'CAD': 'Canadian Dollar',
+    'CHF': 'Swiss Franc',
+    'CNY': 'Chinese Yuan',
+    'INR': 'Indian Rupee',
+    'LKR': 'Sri Lankan Rupee'
+  };
 
   // Fetch data when component mounts and when group._id changes
   useEffect(() => {
@@ -281,6 +301,66 @@ const GroupDetails = ({ group: initialGroup, onBack }) => {
     }
   };
 
+  const handleUpdateCurrency = async (newCurrency) => {
+    try {
+      setLoading(true);
+      const response = await axios.put(`/api/groups/${group._id}`, {
+        currency: newCurrency
+      });
+
+      setGroup(response.data.data);
+      setSelectedCurrency(newCurrency);
+      setShowCurrencyModal(false);
+      setError(null);
+    } catch (err) {
+      console.error('Error updating currency:', err);
+      setError(err.response?.data?.message || 'Failed to update currency');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateName = async () => {
+    if (!updatedName.trim()) {
+      setError('Group name cannot be empty');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await axios.put(`/api/groups/${group._id}`, {
+        name: updatedName.trim()
+      });
+
+      setGroup(response.data.data);
+      setEditName(false);
+      setError(null);
+    } catch (err) {
+      console.error('Error updating name:', err);
+      setError(err.response?.data?.message || 'Failed to update group name');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateDescription = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.put(`/api/groups/${group._id}`, {
+        description: updatedDescription.trim()
+      });
+
+      setGroup(response.data.data);
+      setEditDescription(false);
+      setError(null);
+    } catch (err) {
+      console.error('Error updating description:', err);
+      setError(err.response?.data?.message || 'Failed to update group description');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getBalanceColor = (balance) => {
     if (balance > 0) return 'text-green-600';
     if (balance < 0) return 'text-red-600';
@@ -429,7 +509,7 @@ const GroupDetails = ({ group: initialGroup, onBack }) => {
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200 mb-6 md:mb-8 overflow-x-auto">
-          {['expenses', 'balances', 'settlement', 'members'].map((tab) => (
+          {['expenses', 'balances', 'settlement', 'members', ...(isCurrentUserAdmin() ? ['settings'] : [])].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -767,6 +847,226 @@ const GroupDetails = ({ group: initialGroup, onBack }) => {
             )}
           </div>
         )}
+
+        {/* Settings Tab - Only for Admin */}
+        {activeTab === 'settings' && isCurrentUserAdmin() && (
+          <div className="space-y-6 md:space-y-8">
+            {/* Currency Settings */}
+            <div className="bg-gradient-to-br from-indigo-50 via-blue-50 to-cyan-50 rounded-lg md:rounded-2xl p-6 md:p-8 border border-indigo-200/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="flex items-center gap-3 md:gap-4 mb-6">
+                <div className="w-10 md:w-12 h-10 md:h-12 bg-gradient-to-br from-indigo-600 to-blue-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-xl md:text-2xl">💱</span>
+                </div>
+                <h3 className="text-lg md:text-xl font-black bg-gradient-to-r from-indigo-900 to-blue-900 bg-clip-text text-transparent">Group Currency</h3>
+              </div>
+              
+              <p className="text-sm md:text-base text-gray-700 mb-6 leading-relaxed">
+                Choose the primary currency for all expenses in this group. All members will see amounts displayed in this currency. Only admins can change this setting.
+              </p>
+
+              <div className="bg-gradient-to-r from-indigo-100/60 to-blue-100/60 rounded-lg md:rounded-xl p-4 md:p-5 border border-indigo-200/80 flex items-center justify-between mb-6">
+                <div>
+                  <p className="text-xs md:text-sm font-bold text-indigo-700 uppercase tracking-wide mb-1">Current Currency</p>
+                  <p className="text-lg md:text-2xl font-black text-indigo-900">{group.currency}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs md:text-sm text-indigo-700 font-semibold">{currencyNames[group.currency]}</p>
+                  <p className="text-2xl md:text-3xl mt-1">
+                    {['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR', 'LKR'].includes(group.currency) 
+                      ? ['$', '€', '£', '¥', 'A$', 'C$', '₣', '¥', '₹', 'Rs'][['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR', 'LKR'].indexOf(group.currency)]
+                      : '$'
+                    }
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowCurrencyModal(true);
+                  setSelectedCurrency(group.currency);
+                }}
+                className="w-full px-6 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg md:rounded-xl font-bold text-base md:text-lg hover:shadow-lg transition-all hover:scale-105 active:scale-95"
+              >
+                🔄 Change Currency
+              </button>
+            </div>
+
+            {/* Group Information - Editable */}
+            <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-indigo-50 rounded-lg md:rounded-2xl p-6 md:p-8 border border-purple-200/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+              <div className="flex items-center gap-3 md:gap-4 mb-6 md:mb-8">
+                <div className="w-10 md:w-12 h-10 md:h-12 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg">
+                  <svg className="w-6 md:w-7 h-6 md:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg md:text-xl font-black bg-gradient-to-r from-purple-900 to-pink-900 bg-clip-text text-transparent">Group Information</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {/* Group Name */}
+                <div className="md:col-span-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-xs md:text-sm font-bold text-purple-700 uppercase tracking-wide">📝 Group Name</label>
+                    {!editName && (
+                      <button
+                        onClick={() => {
+                          setEditName(true);
+                          setUpdatedName(group.name);
+                        }}
+                        className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all hover:scale-105 font-semibold"
+                      >
+                        ✏️ Edit
+                      </button>
+                    )}
+                  </div>
+                  {editName ? (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={updatedName}
+                        onChange={(e) => setUpdatedName(e.target.value)}
+                        className="flex-1 px-4 py-3 border-2 border-purple-300 rounded-lg md:rounded-xl focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 text-sm font-semibold bg-white/80 backdrop-blur-sm transition-all"
+                        placeholder="Enter group name"
+                        maxLength={100}
+                      />
+                      <button
+                        onClick={handleUpdateName}
+                        disabled={loading}
+                        className="px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg md:rounded-xl font-bold text-sm hover:shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        💾 Save
+                      </button>
+                      <button
+                        onClick={() => setEditName(false)}
+                        disabled={loading}
+                        className="px-4 py-3 bg-gray-400/80 text-white rounded-lg md:rounded-xl font-bold text-sm hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-gradient-to-br from-white to-purple-50/50 p-4 rounded-lg md:rounded-xl border border-purple-100/60 shadow-sm hover:shadow-md transition-all">
+                      <p className="text-base md:text-lg font-black text-gray-900">{group.name}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div className="md:col-span-2">
+                  <div className="flex items-center justify-between mb-3">
+                    <label className="text-xs md:text-sm font-bold text-purple-700 uppercase tracking-wide">📌 Description</label>
+                    {!editDescription && (
+                      <button
+                        onClick={() => {
+                          setEditDescription(true);
+                          setUpdatedDescription(group.description || '');
+                        }}
+                        className="text-xs px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all hover:scale-105 font-semibold"
+                      >
+                        ✏️ Edit
+                      </button>
+                    )}
+                  </div>
+                  {editDescription ? (
+                    <div className="flex flex-col gap-2">
+                      <textarea
+                        value={updatedDescription}
+                        onChange={(e) => setUpdatedDescription(e.target.value)}
+                        className="w-full px-4 py-3 border-2 border-purple-300 rounded-lg md:rounded-xl focus:outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-200 text-sm font-medium resize-none bg-white/80 backdrop-blur-sm transition-all"
+                        placeholder="Enter group description (optional)"
+                        maxLength={500}
+                        rows={3}
+                      />
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={handleUpdateDescription}
+                          disabled={loading}
+                          className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg md:rounded-xl font-bold text-sm hover:shadow-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          💾 Save
+                        </button>
+                        <button
+                          onClick={() => setEditDescription(false)}
+                          disabled={loading}
+                          className="px-4 py-2 bg-gray-400/80 text-white rounded-lg md:rounded-xl font-bold text-sm hover:bg-gray-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-gradient-to-br from-white to-purple-50/50 p-4 rounded-lg md:rounded-xl border border-purple-100/60 shadow-sm hover:shadow-md transition-all min-h-20">
+                      <p className="text-sm md:text-base font-semibold text-gray-800 leading-relaxed">{group.description || <span className="text-gray-400 italic">No description added yet</span>}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Created Date - with icon */}
+                <div className="bg-gradient-to-br from-blue-50 to-cyan-50 p-4 rounded-lg md:rounded-xl border border-blue-100/60 shadow-sm hover:shadow-md transition-all">
+                  <p className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-2">📅 Created</p>
+                  <p className="text-base md:text-lg font-black text-blue-900">{new Date(group.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</p>
+                </div>
+
+                {/* Total Members - with icon */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-lg md:rounded-xl border border-green-100/60 shadow-sm hover:shadow-md transition-all">
+                  <p className="text-xs font-bold text-green-700 uppercase tracking-wide mb-2">👥 Members</p>
+                  <p className="text-base md:text-lg font-black text-green-900">{group.members?.length || 0}</p>
+                </div>
+
+                {/* Total Expenses - with icon */}
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-lg md:rounded-xl border border-orange-100/60 shadow-sm hover:shadow-md transition-all">
+                  <p className="text-xs font-bold text-orange-700 uppercase tracking-wide mb-2">💰 Expenses</p>
+                  <p className="text-base md:text-lg font-black text-orange-900">{group.expenses?.length || 0}</p>
+                </div>
+
+                {/* Group Status */}
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 p-4 rounded-lg md:rounded-xl border border-indigo-100/60 shadow-sm hover:shadow-md transition-all">
+                  <p className="text-xs font-bold text-indigo-700 uppercase tracking-wide mb-2">🔐 Status</p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                    <p className="text-base md:text-lg font-black text-indigo-900">Active</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Admin Notice */}
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 border border-blue-200/60 rounded-lg md:rounded-2xl p-6 md:p-8 shadow-sm hover:shadow-md transition-all">
+              <div className="flex items-start gap-4">
+                <div className="w-10 md:w-12 h-10 md:h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 mt-0.5">
+                  <span className="text-xl md:text-2xl">💡</span>
+                </div>
+                <div>
+                  <h4 className="text-base md:text-lg font-black text-blue-900 mb-2">Admin Privileges</h4>
+                  <p className="text-sm md:text-base text-blue-800 leading-relaxed">
+                    As a group admin, you have full control over all group settings. You can:
+                  </p>
+                  <ul className="text-sm md:text-base text-blue-800 mt-3 space-y-2">
+                    <li className="flex items-center gap-2">
+                      <span className="text-lg">✓</span>
+                      <span>Change the group name and description anytime</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-lg">✓</span>
+                      <span>Update the currency for all group expenses</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-lg">✓</span>
+                      <span>Manage group members and their roles</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="text-lg">✓</span>
+                      <span>Delete the entire group if needed</span>
+                    </li>
+                  </ul>
+                  <p className="text-xs md:text-sm text-blue-700 font-semibold mt-4 pt-4 border-t border-blue-200">
+                    💼 All changes will be immediately visible to all group members.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Add Expense Modal */}
@@ -776,6 +1076,67 @@ const GroupDetails = ({ group: initialGroup, onBack }) => {
           onClose={() => setShowAddExpenseModal(false)}
           onSubmit={handleAddExpense}
         />,
+        document.body
+      )}
+
+      {/* Currency Selection Modal */}
+      {showCurrencyModal && createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-3 md:p-4">
+          <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl max-w-md w-full p-4 md:p-8 animate-in zoom-in duration-300">
+            <div className="text-center mb-4 md:mb-6">
+              <div className="w-14 md:w-16 h-14 md:h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
+                <span className="text-2xl md:text-3xl">💱</span>
+              </div>
+              <h2 className="text-lg md:text-2xl font-bold text-gray-900 mb-2">Select Group Currency</h2>
+              <p className="text-xs md:text-sm text-gray-600">
+                Choose the currency for all expenses in this group. All members will see amounts in this currency.
+              </p>
+            </div>
+
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg md:rounded-xl p-3 md:p-4 mb-4 md:mb-6">
+              <p className="text-xs md:text-sm text-indigo-700 font-semibold">
+                Current Currency: <span className="text-indigo-900 font-bold">{group.currency} - {currencyNames[group.currency]}</span>
+              </p>
+            </div>
+
+            <div className="space-y-2 md:space-y-3 mb-4 md:mb-6 max-h-80 overflow-y-auto">
+              {supportedCurrencies.map((currency) => (
+                <button
+                  key={currency}
+                  onClick={() => handleUpdateCurrency(currency)}
+                  disabled={loading || currency === group.currency}
+                  className={`w-full p-3 md:p-4 rounded-lg md:rounded-xl border-2 font-bold text-sm md:text-base transition-all ${
+                    currency === group.currency
+                      ? 'border-indigo-600 bg-indigo-100 text-indigo-900 cursor-not-allowed'
+                      : currency === selectedCurrency
+                      ? 'border-indigo-400 bg-indigo-50 text-indigo-800 hover:bg-indigo-100'
+                      : 'border-gray-200 bg-white text-gray-800 hover:border-indigo-400 hover:bg-indigo-50'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="text-left">
+                      <p className="font-bold">{currency}</p>
+                      <p className="text-xs text-gray-600">{currencyNames[currency]}</p>
+                    </div>
+                    {currency === group.currency && (
+                      <span className="text-lg">✓</span>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+              <button
+                onClick={() => setShowCurrencyModal(false)}
+                disabled={loading}
+                className="flex-1 px-3 md:px-4 py-2 md:py-3 bg-gray-200 text-gray-800 rounded-lg md:rounded-xl font-bold hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm md:text-base"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
         document.body
       )}
 

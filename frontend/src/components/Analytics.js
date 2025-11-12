@@ -11,6 +11,7 @@ import {
 } from 'chart.js';
 import { Bar, Pie } from 'react-chartjs-2';
 import { Icons } from '../utils/svgIcons';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 ChartJS.register(
   CategoryScale,
@@ -31,6 +32,7 @@ if (typeof document !== 'undefined') {
 }
 
 const Analytics = ({ expenses, monthlyIncome = 0 }) => {
+  const { currencySymbol, formatCurrencyWithDecimals } = useCurrency();
   const categories = [
     'Food', 
     'Transport', 
@@ -118,7 +120,7 @@ const Analytics = ({ expenses, monthlyIncome = 0 }) => {
     labels: categories,
     datasets: [
       {
-        label: 'Amount ($)',
+        label: `Amount (${currencySymbol})`,
         data: categories.map(cat => categoryTotals[cat] || 0),
         backgroundColor: [
           'rgba(34, 197, 94, 0.7)',   // Green
@@ -226,7 +228,7 @@ const Analytics = ({ expenses, monthlyIncome = 0 }) => {
             const value = context.parsed;
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
             const percentage = ((value / total) * 100).toFixed(1);
-            return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+            return `${label}: ${currencySymbol}${value.toFixed(2)} (${percentage}%)`;
           },
           afterLabel: function(context) {
             return 'Click for details →';
@@ -272,7 +274,7 @@ const Analytics = ({ expenses, monthlyIncome = 0 }) => {
           label: function(context) {
             const total = context.dataset.data.reduce((a, b) => a + b, 0);
             const percentage = ((context.parsed.y / total) * 100).toFixed(1);
-            return [`Amount: $${context.parsed.y.toFixed(2)}`, `Percentage: ${percentage}%`];
+            return [`Amount: ${currencySymbol}${context.parsed.y.toFixed(2)}`, `Percentage: ${percentage}%`];
           }
         }
       }
@@ -282,7 +284,7 @@ const Analytics = ({ expenses, monthlyIncome = 0 }) => {
         beginAtZero: true,
         ticks: {
           callback: function(value) {
-            return '$' + value.toFixed(2);
+            return currencySymbol + value.toFixed(2);
           },
           font: {
             size: 12,
@@ -488,9 +490,9 @@ const Analytics = ({ expenses, monthlyIncome = 0 }) => {
                 )}
               </p>
               <p className="text-xs text-green-600 mt-1 font-medium">
-                ${Object.keys(categoryTotals).length > 0 
-                  ? Math.max(...Object.values(categoryTotals)).toFixed(2) 
-                  : '0.00'}
+                {formatCurrencyWithDecimals(Object.keys(categoryTotals).length > 0 
+                  ? Math.max(...Object.values(categoryTotals))
+                  : 0)}
               </p>
             </div>
             <div className="w-10 md:w-12 h-10 md:h-12 flex-shrink-0 text-green-600 group-hover:scale-110 group-hover:rotate-12 transition-transform duration-300 opacity-80 group-hover:opacity-100">{Icons.analytics}</div>
@@ -502,7 +504,7 @@ const Analytics = ({ expenses, monthlyIncome = 0 }) => {
             <div>
               <p className="text-blue-600 text-xs md:text-sm font-semibold uppercase tracking-wider">Avg per Transaction</p>
               <p className="text-lg md:text-2xl font-bold text-blue-700 mt-2 group-hover:text-blue-800 transition-colors">
-                ${expenses.length > 0 ? (expenses.reduce((sum, exp) => sum + exp.amount, 0) / expenses.length).toFixed(2) : '0.00'}
+                {formatCurrencyWithDecimals(expenses.length > 0 ? (expenses.reduce((sum, exp) => sum + exp.amount, 0) / expenses.length) : 0)}
               </p>
               <p className="text-xs text-blue-600 mt-1 font-medium">{expenses.length} transactions</p>
             </div>
@@ -515,10 +517,11 @@ const Analytics = ({ expenses, monthlyIncome = 0 }) => {
             <div>
               <p className="text-purple-600 text-xs md:text-sm font-semibold uppercase tracking-wider">Today's Spending</p>
               <p className="text-lg md:text-2xl font-bold text-purple-700 mt-2 group-hover:text-purple-800 transition-colors">
-                ${expenses
-                  .filter(exp => new Date(exp.date).toDateString() === new Date().toDateString())
-                  .reduce((sum, exp) => sum + exp.amount, 0)
-                  .toFixed(2)}
+                {formatCurrencyWithDecimals(
+                  expenses
+                    .filter(exp => new Date(exp.date).toDateString() === new Date().toDateString())
+                    .reduce((sum, exp) => sum + exp.amount, 0)
+                )}
               </p>
               <p className="text-xs text-purple-600 mt-1 font-medium">
                 {expenses.filter(exp => new Date(exp.date).toDateString() === new Date().toDateString()).length} transactions today
@@ -529,112 +532,6 @@ const Analytics = ({ expenses, monthlyIncome = 0 }) => {
         </div>
       </div>
 
-      {/* Budget Overview - Only show if income is set */}
-      {monthlyIncome > 0 && (
-        <div className="mt-6 md:mt-8">
-          <div className="flex items-center mb-4 md:mb-6">
-            <div className="w-5 h-5 mr-3 text-indigo-600 animate-pulse">{Icons.money}</div>
-            <h3 className="text-base md:text-xl font-bold text-gray-800">Budget Overview</h3>
-            <div className="ml-auto text-xs bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1 rounded-full font-semibold">
-              Smart Analysis
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-4">
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 p-3 md:p-4 rounded-lg md:rounded-xl border border-indigo-100 group hover:shadow-lg hover:border-indigo-200 transition-all duration-300 transform hover:scale-105 cursor-pointer hover:-translate-y-1 hover:bg-gradient-to-br hover:from-indigo-100 hover:to-blue-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-indigo-600 text-xs md:text-sm font-semibold uppercase tracking-wider">Monthly Salary</p>
-                  <p className="text-lg md:text-xl font-bold text-indigo-700 mt-2 group-hover:text-indigo-800 transition-colors">${monthlyIncome.toFixed(2)}</p>
-                  <div className="w-full bg-indigo-200 rounded-full h-2 mt-2 overflow-hidden">
-                    <div className="bg-gradient-to-r from-indigo-600 to-blue-600 h-full rounded-full" style={{width: '100%'}}></div>
-                  </div>
-                </div>
-                <div className="w-6 md:w-8 h-6 md:h-8 flex-shrink-0 text-indigo-600 group-hover:scale-110 transition-transform">{Icons.budget}</div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-red-50 to-pink-50 p-3 md:p-4 rounded-lg md:rounded-xl border border-red-100 group hover:shadow-lg hover:border-red-200 transition-all duration-300 transform hover:scale-105 cursor-pointer hover:-translate-y-1 hover:bg-gradient-to-br hover:from-red-100 hover:to-pink-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-red-600 text-xs md:text-sm font-semibold uppercase tracking-wider">Total Expenses</p>
-                  <p className="text-lg md:text-xl font-bold text-red-700 mt-2 group-hover:text-red-800 transition-colors">
-                    ${expenses.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}
-                  </p>
-                  <div className="w-full bg-red-200 rounded-full h-2 mt-2 overflow-hidden">
-                    <div 
-                      className="bg-gradient-to-r from-red-600 to-pink-600 h-full rounded-full transition-all duration-500" 
-                      style={{width: `${Math.min(100, (expenses.reduce((sum, exp) => sum + exp.amount, 0) / monthlyIncome) * 100)}%`}}
-                    ></div>
-                  </div>
-                </div>
-                <div className="w-6 md:w-8 h-6 md:h-8 flex-shrink-0 text-red-600 group-hover:scale-110 transition-transform">{Icons.creditCard}</div>
-              </div>
-            </div>
-
-            <div className={`bg-gradient-to-br p-3 md:p-4 rounded-lg md:rounded-xl border group hover:shadow-lg transition-all duration-300 transform hover:scale-105 cursor-pointer hover:-translate-y-1 ${
-              (monthlyIncome - expenses.reduce((sum, exp) => sum + exp.amount, 0)) >= 0 
-                ? 'from-green-50 to-emerald-50 border-green-100 hover:border-green-200 hover:bg-gradient-to-br hover:from-green-100 hover:to-emerald-100' 
-                : 'from-red-50 to-rose-50 border-red-100 hover:border-red-200 hover:bg-gradient-to-br hover:from-red-100 hover:to-rose-100'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className={`text-xs md:text-sm font-semibold uppercase tracking-wider ${
-                    (monthlyIncome - expenses.reduce((sum, exp) => sum + exp.amount, 0)) >= 0 
-                      ? 'text-green-600' 
-                      : 'text-red-600'
-                  }`}>
-                    {(monthlyIncome - expenses.reduce((sum, exp) => sum + exp.amount, 0)) >= 0 ? 'Remaining' : 'Over Budget'}
-                  </p>
-                  <p className={`text-lg md:text-xl font-bold mt-2 transition-colors ${
-                    (monthlyIncome - expenses.reduce((sum, exp) => sum + exp.amount, 0)) >= 0 
-                      ? 'text-green-700 group-hover:text-green-800' 
-                      : 'text-red-700 group-hover:text-red-800'
-                  }`}>
-                    ${Math.abs(monthlyIncome - expenses.reduce((sum, exp) => sum + exp.amount, 0)).toFixed(2)}
-                  </p>
-                  <div className={`w-full rounded-full h-2 mt-2 overflow-hidden ${
-                    (monthlyIncome - expenses.reduce((sum, exp) => sum + exp.amount, 0)) >= 0 
-                      ? 'bg-green-200' 
-                      : 'bg-red-200'
-                  }`}>
-                    <div 
-                      className={`h-full rounded-full transition-all duration-500 ${
-                        (monthlyIncome - expenses.reduce((sum, exp) => sum + exp.amount, 0)) >= 0 
-                          ? 'bg-gradient-to-r from-green-600 to-emerald-600' 
-                          : 'bg-gradient-to-r from-red-600 to-rose-600'
-                      }`} 
-                      style={{width: `${Math.min(100, (Math.abs(monthlyIncome - expenses.reduce((sum, exp) => sum + exp.amount, 0)) / monthlyIncome) * 100)}%`}}
-                    ></div>
-                  </div>
-                </div>
-                <div className="w-6 md:w-8 h-6 md:h-8 flex-shrink-0 group-hover:scale-110 transition-transform">
-                  {(monthlyIncome - expenses.reduce((sum, exp) => sum + exp.amount, 0)) >= 0 ? <span className="text-green-600">{Icons.checkmark}</span> : <span className="text-red-600">{Icons.warning}</span>}
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-3 md:p-4 rounded-lg md:rounded-xl border border-yellow-100 group hover:shadow-lg hover:border-yellow-200 transition-all duration-300 transform hover:scale-105 cursor-pointer hover:-translate-y-1 hover:bg-gradient-to-br hover:from-yellow-100 hover:to-amber-100">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-yellow-600 text-xs md:text-sm font-semibold uppercase tracking-wider">Expense Ratio</p>
-                  <p className="text-lg md:text-xl font-bold text-yellow-700 mt-2 group-hover:text-yellow-800 transition-colors">
-                    {((expenses.reduce((sum, exp) => sum + exp.amount, 0) / monthlyIncome) * 100).toFixed(1)}%
-                  </p>
-                  <div className="w-full bg-yellow-200 rounded-full h-2 mt-2 overflow-hidden">
-                    <div 
-                      className="bg-gradient-to-r from-yellow-600 to-amber-600 h-full rounded-full transition-all duration-500" 
-                      style={{width: `${Math.min(100, ((expenses.reduce((sum, exp) => sum + exp.amount, 0) / monthlyIncome) * 100))}%`}}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-yellow-600 mt-1 font-medium">{((expenses.reduce((sum, exp) => sum + exp.amount, 0) / monthlyIncome) * 100) < 80 ? '✓ Healthy' : '⚠ High'}</p>
-                </div>
-                <div className="w-6 md:w-8 h-6 md:h-8 flex-shrink-0 text-yellow-600 group-hover:scale-110 transition-transform">{Icons.analytics}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ExpenseAI from '../utils/ExpenseAI';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { Icons } from '../utils/svgIcons';
 
 const AIAssistant = ({ expenses, monthlyIncome }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeView, setActiveView] = useState('tips');
   const [insights, setInsights] = useState(null);
+  const { formatCurrencyWithDecimals } = useCurrency();
   const [chatMessages, setChatMessages] = useState([
     {
       id: 1,
@@ -52,7 +54,7 @@ const AIAssistant = ({ expenses, monthlyIncome }) => {
     // Analyze user intent and provide contextual responses
     if (message.includes('budget') || message.includes('spend')) {
       if (monthlyIncome > 0) {
-        return `Based on your data, you've spent $${totalExpenses.toFixed(2)} out of your $${monthlyIncome.toFixed(2)} monthly salary (${expenseRatio.toFixed(1)}%). ${
+        return `Based on your data, you've spent ${formatCurrencyWithDecimals(totalExpenses)} out of your ${formatCurrencyWithDecimals(monthlyIncome)} monthly salary (${expenseRatio.toFixed(1)}%). ${
           expenseRatio > 80 ? 'You might want to review your spending habits!' :
           expenseRatio > 50 ? 'You\'re on track, but keep monitoring your expenses.' :
           'Great job managing your budget!'
@@ -65,7 +67,7 @@ const AIAssistant = ({ expenses, monthlyIncome }) => {
       if (monthlyIncome > 0) {
         const savings = monthlyIncome - totalExpenses;
         const savingsRate = (savings / monthlyIncome) * 100;
-        return `You're currently saving $${savings.toFixed(2)} per month (${savingsRate.toFixed(1)}% savings rate). ${
+        return `You're currently saving ${formatCurrencyWithDecimals(savings)} per month (${savingsRate.toFixed(1)}% savings rate). ${
           savingsRate >= 20 ? 'Excellent! You\'re exceeding the recommended 20% savings rate.' :
           savingsRate >= 10 ? 'Good progress! Try to increase to 20% if possible.' :
           'Consider reducing expenses to boost your savings rate to at least 10-20%.'
@@ -83,7 +85,7 @@ const AIAssistant = ({ expenses, monthlyIncome }) => {
         const topCategory = Object.keys(categoryTotals).reduce((a, b) => 
           categoryTotals[a] > categoryTotals[b] ? a : b
         );
-        return `Your highest spending category is "${topCategory}" with $${categoryTotals[topCategory].toFixed(2)}. Consider if this aligns with your priorities and budget goals.`;
+        return `Your highest spending category is "${topCategory}" with ${formatCurrencyWithDecimals(categoryTotals[topCategory])}. Consider if this aligns with your priorities and budget goals.`;
       }
       return "Add some expenses first, and I'll analyze your spending patterns for you!";
     }

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../utils/svgIcons';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const History = ({ expenses, incomes }) => {
+  const { currencySymbol, formatCurrencyWithDecimals } = useCurrency();
   const [filteredData, setFilteredData] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
@@ -102,13 +104,6 @@ const History = ({ expenses, incomes }) => {
     });
 
     setFilteredData(sorted);
-  };
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
   };
 
   const formatDate = (date) => {
@@ -267,7 +262,7 @@ const History = ({ expenses, incomes }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-600 text-sm font-bold">Total Income</p>
-                <p className="text-2xl font-black text-green-800">{formatCurrency(stats.totalIncomes)}</p>
+                <p className="text-2xl font-black text-green-800">{formatCurrencyWithDecimals(stats.totalIncomes)}</p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center text-white">
                 <div className="w-6 h-6">{Icons.money}</div>
@@ -279,7 +274,7 @@ const History = ({ expenses, incomes }) => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-red-600 text-sm font-bold">Total Expenses</p>
-                <p className="text-2xl font-black text-red-800">{formatCurrency(stats.totalExpenses)}</p>
+                <p className="text-2xl font-black text-red-800">{formatCurrencyWithDecimals(stats.totalExpenses)}</p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl flex items-center justify-center text-white">
                 <div className="w-6 h-6">{Icons.creditCard}</div>
@@ -292,7 +287,7 @@ const History = ({ expenses, incomes }) => {
               <div>
                 <p className={`text-sm font-bold ${stats.netAmount >= 0 ? 'text-purple-600' : 'text-orange-600'}`}>Net Amount</p>
                 <p className={`text-2xl font-black ${stats.netAmount >= 0 ? 'text-purple-800' : 'text-orange-800'}`}>
-                  {formatCurrency(stats.netAmount)}
+                  {formatCurrencyWithDecimals(stats.netAmount)}
                 </p>
               </div>
               <div className={`w-12 h-12 bg-gradient-to-br rounded-2xl flex items-center justify-center text-white ${stats.netAmount >= 0 ? 'from-purple-500 to-pink-600' : 'from-orange-500 to-red-600'}`}>
@@ -338,7 +333,7 @@ const History = ({ expenses, incomes }) => {
                     </div>
                     <div className="text-right">
                       <p className={`text-xl font-black ${item.color}`}>
-                        {formatCurrency(item.displayAmount)}
+                        {formatCurrencyWithDecimals(item.displayAmount)}
                       </p>
                       <p className="text-sm text-gray-500 capitalize">{item.type}</p>
                     </div>

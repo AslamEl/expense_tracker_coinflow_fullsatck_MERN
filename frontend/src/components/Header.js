@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useCurrency } from '../contexts/CurrencyContext';
 import { Icons } from '../utils/svgIcons';
 
 const Header = ({ user, onLogout, currentPage = 'home' }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const { currentTheme, changeTheme, getThemeClasses } = useTheme();
+  const { currencySymbol, formatCurrencyWithDecimals } = useCurrency();
 
   // Debug log to check if props are being passed correctly
   useEffect(() => {
@@ -24,7 +26,7 @@ const Header = ({ user, onLogout, currentPage = 'home' }) => {
     { id: 'home', label: 'Home', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6', color: 'blue', action: 'showHome' },
     { id: 'summary', label: 'Summary', icon: 'M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01', color: 'green', action: 'showExpenseSummary' },
     { id: 'analytics', label: 'Analytics', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z', color: 'purple', action: 'showExpenseAnalytics' },
-    { id: 'recent', label: 'Recent', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'orange', action: 'showRecentExpenses' },
+    { id: 'recent', label: 'Recent', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', color: 'orange', action: 'showRecentTransactions' },
     { id: 'groups', label: 'Groups', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', color: 'pink', action: 'showGroups' }
   ];
 
@@ -241,7 +243,7 @@ const Header = ({ user, onLogout, currentPage = 'home' }) => {
                   <div className="px-3 sm:px-4 py-3 md:py-3 text-gray-700 border-b border-gray-200 bg-white/50 hidden sm:block">
                     <div className="flex items-center justify-between">
                       <span className="font-semibold">Monthly Salary:</span>
-                      <span className="font-bold text-green-600">${user?.monthlySalary?.toFixed(2) || '0.00'}</span>
+                      <span className="font-bold text-green-600">{formatCurrencyWithDecimals(user?.monthlySalary || 0)}</span>
                     </div>
                   </div>
                   
@@ -365,7 +367,13 @@ const Header = ({ user, onLogout, currentPage = 'home' }) => {
               {currentPage === 'recent' && (
                 <>
                   <div className="w-5 h-5 md:w-6 md:h-6 text-white">{Icons.timer}</div>
-                  <p className="text-xs md:text-lg font-medium">Check your recent transactions</p>
+                  <p className="text-xs md:text-lg font-medium">Check your recent transactions (Expenses & Income)</p>
+                </>
+              )}
+              {currentPage === 'recentIncomes' && (
+                <>
+                  <div className="w-5 h-5 md:w-6 md:h-6 text-white">{Icons.money}</div>
+                  <p className="text-xs md:text-lg font-medium">Check your recent income transactions</p>
                 </>
               )}
               {currentPage === 'groups' && (

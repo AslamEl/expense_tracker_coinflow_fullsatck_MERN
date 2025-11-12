@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Icons } from '../utils/svgIcons';
+import { useCurrency } from '../contexts/CurrencyContext';
 
 const Dashboard = ({ expenses, incomes, monthlySalary, groups = [] }) => {
+  const { currencySymbol, formatCurrencyWithDecimals } = useCurrency();
   const [dashboardStats, setDashboardStats] = useState({
     totalExpenses: 0,
     totalIncome: 0,
@@ -122,13 +124,6 @@ const Dashboard = ({ expenses, incomes, monthlySalary, groups = [] }) => {
     }
   };
 
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
-
   const getBalanceColor = (balance) => {
     if (balance > 0) return 'text-green-600';
     if (balance < 0) return 'text-red-600';
@@ -198,7 +193,7 @@ const Dashboard = ({ expenses, incomes, monthlySalary, groups = [] }) => {
               <span className="text-green-600 text-xs md:text-sm font-bold">+{((dashboardStats.totalIncome / (monthlySalary || 1)) * 100).toFixed(0)}%</span>
             </div>
             <p className="text-gray-600 text-xs md:text-sm font-medium mb-1">Total Income</p>
-            <p className="text-lg md:text-2xl font-black text-green-600">{formatCurrency(dashboardStats.totalIncome)}</p>
+            <p className="text-lg md:text-2xl font-black text-green-600">{formatCurrencyWithDecimals(dashboardStats.totalIncome)}</p>
           </div>
 
           {/* Total Expenses */}
@@ -210,7 +205,7 @@ const Dashboard = ({ expenses, incomes, monthlySalary, groups = [] }) => {
               <span className="text-red-600 text-xs md:text-sm font-bold">{dashboardStats.topCategory}</span>
             </div>
             <p className="text-gray-600 text-xs md:text-sm font-medium mb-1">Total Expenses</p>
-            <p className="text-lg md:text-2xl font-black text-red-600">{formatCurrency(dashboardStats.totalExpenses)}</p>
+            <p className="text-lg md:text-2xl font-black text-red-600">{formatCurrencyWithDecimals(dashboardStats.totalExpenses)}</p>
           </div>
 
           {/* Net Balance */}
@@ -225,7 +220,7 @@ const Dashboard = ({ expenses, incomes, monthlySalary, groups = [] }) => {
             </div>
             <p className="text-gray-600 text-xs md:text-sm font-medium mb-1">Net Balance</p>
             <p className={`text-lg md:text-2xl font-black ${getBalanceColor(dashboardStats.netBalance)}`}>
-              {formatCurrency(dashboardStats.netBalance)}
+              {formatCurrencyWithDecimals(dashboardStats.netBalance)}
             </p>
           </div>
 
@@ -238,7 +233,7 @@ const Dashboard = ({ expenses, incomes, monthlySalary, groups = [] }) => {
               <span className="text-purple-600 text-xs md:text-sm font-bold">{groups.length} groups</span>
             </div>
             <p className="text-gray-600 text-sm font-medium mb-1">Group Expenses</p>
-            <p className="text-2xl font-black text-purple-600">{formatCurrency(dashboardStats.groupExpenses)}</p>
+            <p className="text-2xl font-black text-purple-600">{formatCurrencyWithDecimals(dashboardStats.groupExpenses)}</p>
           </div>
         </div>
 

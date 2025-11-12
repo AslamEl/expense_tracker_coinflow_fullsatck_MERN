@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Icons } from '../utils/svgIcons';
+import { useCurrency } from '../contexts/CurrencyContext';
 
-const ExpenseAnalytics = ({ expenses }) => {
+const ExpenseAnalytics = ({ expenses, incomes = [] }) => {
+  const { currencySymbol, formatCurrencyWithDecimals } = useCurrency();
   const [analyticsView, setAnalyticsView] = useState('trends');
 
   // Get monthly trends
@@ -85,13 +87,6 @@ const ExpenseAnalytics = ({ expenses }) => {
 
   const maxMonthlySpending = Math.max(...monthlyTrends.map(m => m.total));
   const maxDaySpending = Math.max(...spendingPatterns.dayOfWeek.map(d => d.amount));
-
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
 
   const formatMonth = (monthStr) => {
     const [year, month] = monthStr.split('-');
@@ -181,7 +176,7 @@ const ExpenseAnalytics = ({ expenses }) => {
                               <div className="text-right">
                                 <p className="text-xs text-gray-500 font-medium">Total Spent</p>
                                 <p className="text-lg md:text-xl font-black bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                                  {formatCurrency(month.total)}
+                                  {formatCurrencyWithDecimals(month.total)}
                                 </p>
                               </div>
                               {isGrowing ? (
@@ -212,7 +207,7 @@ const ExpenseAnalytics = ({ expenses }) => {
                           
                           <div className="flex items-center gap-2 text-xs">
                             <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 font-medium">{month.count} transactions</span>
-                            <span className="text-gray-500">Avg: {formatCurrency(month.average)}/transaction</span>
+                            <span className="text-gray-500">Avg: {formatCurrencyWithDecimals(month.average)}/transaction</span>
                           </div>
                         </div>
                       </div>
@@ -264,7 +259,7 @@ const ExpenseAnalytics = ({ expenses }) => {
                         {day.day}
                       </p>
                       <p className="text-xs text-gray-600 font-semibold">
-                        {formatCurrency(day.amount)}
+                        {formatCurrencyWithDecimals(day.amount)}
                       </p>
                       {day.amount > 0 && (
                         <div className="mt-1 px-2 py-1 rounded-full bg-gradient-to-r from-yellow-100 to-orange-100 text-xs font-bold text-orange-700">
@@ -334,7 +329,7 @@ const ExpenseAnalytics = ({ expenses }) => {
                             <div className="text-right bg-gradient-to-r from-purple-50 to-pink-50 px-3 md:px-4 py-2 md:py-3 rounded-lg border border-purple-100">
                               <p className="text-xs text-gray-500 font-medium">Total</p>
                               <p className="text-lg md:text-xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                                {formatCurrency(totalAmount)}
+                                {formatCurrencyWithDecimals(totalAmount)}
                               </p>
                             </div>
                           </div>

@@ -1,8 +1,13 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-// JWT Secret (in production, this should be in environment variables)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-this-in-production';
+// JWT Secret (must be set in environment variables)
+const JWT_SECRET = process.env.JWT_SECRET;
+
+// Ensure JWT_SECRET is set
+if (!JWT_SECRET) {
+  throw new Error('CRITICAL: JWT_SECRET is not defined in environment variables. Please set JWT_SECRET in your .env file.');
+}
 
 // Middleware to authenticate JWT token
 const authenticateToken = async (req, res, next) => {

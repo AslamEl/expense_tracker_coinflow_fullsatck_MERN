@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import ExpenseAI from '../utils/ExpenseAI';
 import { Icons } from '../utils/svgIcons';
+import { useCurrency } from '../contexts/CurrencyContext';
 
-const AIInsights = ({ expenses, monthlyIncome = 0 }) => {
+const AIInsights = ({ expenses, incomes = [], monthlyIncome = 0 }) => {
+  const { formatCurrencyWithDecimals } = useCurrency();
   const [insights, setInsights] = useState(null);
   const [activeTab, setActiveTab] = useState('recommendations');
 
   useEffect(() => {
     if (expenses.length > 0) {
-      const ai = new ExpenseAI(expenses, monthlyIncome);
+      // Pass original monthlyIncome (salary) and incomes array separately
+      // ExpenseAI will calculate total = monthlyIncome + sum(incomes)
+      const ai = new ExpenseAI(expenses, monthlyIncome, incomes);
       setInsights(ai.generateInsights());
     }
-  }, [expenses, monthlyIncome]);
+  }, [expenses, incomes, monthlyIncome]);
 
   if (!insights || expenses.length === 0) {
     return (
@@ -195,7 +199,7 @@ const AIInsights = ({ expenses, monthlyIncome = 0 }) => {
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-xs md:text-sm font-medium text-gray-700">Total Monthly Budget:</span>
-                    <span className="text-sm md:text-base font-black text-indigo-600">${rec.totalAllocated.toFixed(2)}</span>
+                    <span className="text-sm md:text-base font-black text-indigo-600">{formatCurrencyWithDecimals(rec.totalAllocated)}</span>
                   </div>
                 </div>
 
@@ -204,6 +208,9 @@ const AIInsights = ({ expenses, monthlyIncome = 0 }) => {
                   const isOverBudget = suggestion.current > suggestion.recommended;
                   const percentage = suggestion.recommended > 0 
                     ? ((suggestion.current / suggestion.recommended) * 100).toFixed(0)
+                    : 0;
+                  const budgetPercentage = rec.totalAllocated > 0 
+                    ? ((suggestion.recommended / rec.totalAllocated) * 100).toFixed(1)
                     : 0;
 
                   return (
@@ -218,18 +225,18 @@ const AIInsights = ({ expenses, monthlyIncome = 0 }) => {
                         <span className={`text-xs px-3 py-1 rounded-full font-bold whitespace-nowrap ml-2 ${
                           isOverBudget ? 'bg-red-200 text-red-800' : 'bg-green-200 text-green-800'
                         }`}>
-                          {percentage}%
+                          {budgetPercentage}%
                         </span>
                       </div>
                       
                       <div className="mt-3 space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-gray-700 font-semibold">Current:</span>
-                          <span className={`text-sm font-bold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>${suggestion.current.toFixed(2)}</span>
+                          <span className={`text-sm font-bold ${isOverBudget ? 'text-red-600' : 'text-green-600'}`}>{formatCurrencyWithDecimals(suggestion.current)}</span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-700 font-semibold">Recommended:</span>
-                          <span className="text-sm font-bold text-blue-600">${suggestion.recommended.toFixed(2)}</span>
+                          <span className="text-sm font-bold text-blue-600">{formatCurrencyWithDecimals(suggestion.recommended)}</span>
                         </div>
                         <div className="mt-3 space-y-1">
                           <div className="flex justify-between items-center mb-1">
@@ -289,7 +296,7 @@ const AIInsights = ({ expenses, monthlyIncome = 0 }) => {
                       <div className="w-5 md:w-6 h-5 md:h-6 text-blue-600">{Icons.analytics}</div>
                     </div>
                     <div className="text-2xl md:text-3xl font-black text-blue-600 mb-2">
-                      ${insights.predictions.predicted.toLocaleString()}
+                      {formatCurrencyWithDecimals(insights.predictions.predicted)}
                     </div>
                     <div className={`inline-block text-xs md:text-sm px-3 py-1 rounded-full font-bold ${
                       insights.predictions.confidence === 'high' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
@@ -321,7 +328,7 @@ const AIInsights = ({ expenses, monthlyIncome = 0 }) => {
                       <div className="w-5 md:w-6 h-5 md:h-6 text-green-600">{Icons.money}</div>
                     </div>
                     <div className="text-2xl md:text-3xl font-black text-green-600 mb-2">
-                      ${insights.stats.avgPerTransaction.toFixed(2)}
+                      {formatCurrencyWithDecimals(insights.stats.avgPerTransaction)}
                     </div>
                     <span className="text-xs md:text-sm text-gray-600 font-medium">
                       Based on {insights.stats.transactionCount} transactions
@@ -341,13 +348,13 @@ const AIInsights = ({ expenses, monthlyIncome = 0 }) => {
                   </p>
                   
                   {/* Income validation warning */}
-                  {insights.predictions.monthlyIncome > 0 && (
+                  {insights.predictions.totalIncome > 0 && (
                     <div className={`text-xs md:text-sm p-3 rounded-lg mb-3 ${
                       insights.predictions.predictedRatio > 80 
                         ? 'bg-red-100 text-red-700 border border-red-300' 
                         : 'bg-green-100 text-green-700 border border-green-300'
                     }`}>
-                      <span className="font-semibold">📊 Income Impact:</span> Predicted spending is {insights.predictions.predictedRatio.toFixed(1)}% of your monthly income
+                      <span className="font-semibold">📊 Income Impact:</span> Predicted spending is {insights.predictions.predictedRatio.toFixed(1)}% of your total monthly income ({formatCurrencyWithDecimals(insights.predictions.totalIncome)})
                     </div>
                   )}
                   
@@ -412,7 +419,11 @@ const AIInsights = ({ expenses, monthlyIncome = 0 }) => {
                           {alert.severity.toUpperCase()}
                         </span>
                       </div>
-                      <p className="text-xs md:text-sm text-gray-700 mb-2">{alert.message}</p>
+                      <p className="text-xs md:text-sm text-gray-700 mb-2">
+                        {alert.type === 'high_daily_spending' 
+                          ? `You've spent ${formatCurrencyWithDecimals(alert.amount)} today, which is above your average`
+                          : alert.message}
+                      </p>
                       
                       {/* Collapsible Action */}
                       <details className="group/details">

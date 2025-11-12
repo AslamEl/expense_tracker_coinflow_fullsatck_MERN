@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { CurrencyProvider } from './contexts/CurrencyContext';
 import { Icons } from './utils/svgIcons';
 import AuthLayout from './components/AuthLayout';
 import LandingPage from './components/LandingPage';
@@ -15,8 +16,7 @@ import Groups from './components/Groups';
 import Home from './components/Home';
 import ExpenseSummary from './components/ExpenseSummary';
 import ExpenseAnalytics from './components/ExpenseAnalytics';
-import RecentExpenses from './components/RecentExpenses';
-
+import RecentTransactions from './components/RecentTransactions';
 import Settings from './components/Settings';
 import './index.css';
 
@@ -32,10 +32,12 @@ const AuthenticatedApp = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [monthlySalary, setMonthlySalary] = useState(user?.monthlySalary || user?.monthlyIncome || 0);
-  const [currentPage, setCurrentPage] = useState('home'); // 'home', 'expenseSummary', 'expenseAnalytics', 'recentExpenses', 'groups', 'settings'
+  const [currentPage, setCurrentPage] = useState('home'); // 'home', 'expenseSummary', 'expenseAnalytics', 'recent', 'groups', 'settings'
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [showSalaryModal, setShowSalaryModal] = useState(false);
+  const [editingExpense, setEditingExpense] = useState(null);
+  const [editingIncome, setEditingIncome] = useState(null);
 
 
 
@@ -55,7 +57,7 @@ const AuthenticatedApp = () => {
     window.showHome = () => setCurrentPage('home');
     window.showExpenseSummary = () => setCurrentPage('expenseSummary');
     window.showExpenseAnalytics = () => setCurrentPage('expenseAnalytics');
-    window.showRecentExpenses = () => setCurrentPage('recentExpenses');
+    window.showRecentTransactions = () => setCurrentPage('recent');
     window.showGroups = () => setCurrentPage('groups');
     
     return () => {
@@ -63,7 +65,7 @@ const AuthenticatedApp = () => {
       delete window.showHome;
       delete window.showExpenseSummary;
       delete window.showExpenseAnalytics;
-      delete window.showRecentExpenses;
+      delete window.showRecentTransactions;
       delete window.showGroups;
     };
   }, []);
@@ -163,6 +165,44 @@ const AuthenticatedApp = () => {
     }
   };
 
+  // Update expense
+  const updateExpense = async (expenseId, updatedData) => {
+    try {
+      const response = await axios.put(`/api/expenses/${expenseId}`, updatedData);
+      setExpenses(prevExpenses =>
+        prevExpenses.map(expense =>
+          expense._id === expenseId ? response.data : expense
+        )
+      );
+      setEditingExpense(null);
+      setShowExpenseModal(false);
+      setError(null);
+    } catch (error) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Failed to update expense. Please try again.');
+      }
+    }
+  };
+
+  // Delete income
+  const deleteIncome = async (incomeId) => {
+    try {
+      await axios.delete(`/api/incomes/${incomeId}`);
+      setIncomes(prevIncomes => 
+        prevIncomes.filter(income => income._id !== incomeId)
+      );
+      setError(null);
+    } catch (error) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Failed to delete income. Please try again.');
+      }
+    }
+  };
+
   // Add new income
   const addIncome = async (incomeData) => {
     try {
@@ -178,7 +218,39 @@ const AuthenticatedApp = () => {
     }
   };
 
+  // Update income
+  const updateIncome = async (incomeId, updatedData) => {
+    try {
+      const response = await axios.put(`/api/incomes/${incomeId}`, updatedData);
+      setIncomes(prevIncomes =>
+        prevIncomes.map(income =>
+          income._id === incomeId ? response.data : income
+        )
+      );
+      setEditingIncome(null);
+      setShowIncomeModal(false);
+      setError(null);
+    } catch (error) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      } else {
+        throw new Error('Failed to update income. Please try again.');
+      }
+    }
+  };
 
+  // Handle edit expense button click
+  const handleEditExpense = (expense) => {
+    console.log('handleEditExpense called with:', expense);
+    setEditingExpense(expense);
+    setShowExpenseModal(true);
+  };
+
+  // Handle edit income button click
+  const handleEditIncome = (income) => {
+    setEditingIncome(income);
+    setShowIncomeModal(true);
+  };
 
   // Update monthly salary
   const updateSalary = async (newSalary) => {
@@ -227,7 +299,7 @@ const AuthenticatedApp = () => {
           currentPage={
             currentPage === 'expenseSummary' ? 'summary' :
             currentPage === 'expenseAnalytics' ? 'analytics' :
-            currentPage === 'recentExpenses' ? 'recent' :
+            currentPage === 'recent' ? 'recent' :
             currentPage === 'groups' ? 'groups' :
             'home'
           }
@@ -238,17 +310,21 @@ const AuthenticatedApp = () => {
         <Settings />
       ) : currentPage === 'expenseSummary' ? (
         <main className="max-w-7xl mx-auto px-4 py-8 relative z-10">
-          <ExpenseSummary expenses={expenses} />
+          <ExpenseSummary expenses={expenses} incomes={incomes} />
         </main>
       ) : currentPage === 'expenseAnalytics' ? (
         <main className="max-w-7xl mx-auto px-4 py-8 relative z-10">
-          <ExpenseAnalytics expenses={expenses} />
+          <ExpenseAnalytics expenses={expenses} incomes={incomes} />
         </main>
-      ) : currentPage === 'recentExpenses' ? (
+      ) : currentPage === 'recent' ? (
         <main className="max-w-7xl mx-auto px-4 py-8 relative z-10">
-          <RecentExpenses 
-            expenses={expenses} 
+          <RecentTransactions 
+            expenses={expenses}
+            incomes={incomes}
             onDeleteExpense={deleteExpense}
+            onEditExpense={handleEditExpense}
+            onDeleteIncome={deleteIncome}
+            onEditIncome={handleEditIncome}
             loading={loading}
           />
         </main>
@@ -292,46 +368,14 @@ const AuthenticatedApp = () => {
           monthlySalary={monthlySalary}
           groups={groups}
           onDeleteExpense={deleteExpense}
+          onEditExpense={handleEditExpense}
+          onDeleteIncome={deleteIncome}
+          onEditIncome={handleEditIncome}
           loading={loading}
           onAddExpense={() => setShowExpenseModal(true)}
           onAddIncome={() => setShowIncomeModal(true)}
           onSetSalary={() => setShowSalaryModal(true)}
         />
-
-        {/* Modals */}
-        <Modal 
-          isOpen={showExpenseModal} 
-          onClose={() => setShowExpenseModal(false)}
-          title="Add New Expense"
-        >
-          <ExpenseFormModal 
-            onAddExpense={addExpense}
-            onClose={() => setShowExpenseModal(false)}
-          />
-        </Modal>
-
-        <Modal 
-          isOpen={showIncomeModal} 
-          onClose={() => setShowIncomeModal(false)}
-          title="Add Income"
-        >
-          <IncomeFormModal 
-            onAddIncome={addIncome}
-            onClose={() => setShowIncomeModal(false)}
-          />
-        </Modal>
-
-        <Modal 
-          isOpen={showSalaryModal} 
-          onClose={() => setShowSalaryModal(false)}
-          title="Set Monthly Salary"
-        >
-          <SalaryFormModal 
-            monthlySalary={monthlySalary}
-            onSalaryUpdate={updateSalary}
-            onClose={() => setShowSalaryModal(false)}
-          />
-        </Modal>
 
         {/* Retry Button for when there's an error */}
         {error && (
@@ -346,6 +390,57 @@ const AuthenticatedApp = () => {
         )}
       </main>
       )}
+
+      {/* Modals - OUTSIDE page conditionals so they work on all pages */}
+      <Modal 
+        isOpen={showExpenseModal} 
+        onClose={() => {
+          setShowExpenseModal(false);
+          setEditingExpense(null);
+        }}
+        title={editingExpense ? "Edit Expense" : "Add New Expense"}
+      >
+        <ExpenseFormModal 
+          onAddExpense={addExpense}
+          onUpdateExpense={updateExpense}
+          editingExpense={editingExpense}
+          onClose={() => {
+            setShowExpenseModal(false);
+            setEditingExpense(null);
+          }}
+        />
+      </Modal>
+
+      <Modal 
+        isOpen={showIncomeModal} 
+        onClose={() => {
+          setShowIncomeModal(false);
+          setEditingIncome(null);
+        }}
+        title={editingIncome ? "Edit Income" : "Add Income"}
+      >
+        <IncomeFormModal 
+          onAddIncome={addIncome}
+          onUpdateIncome={updateIncome}
+          editingIncome={editingIncome}
+          onClose={() => {
+            setShowIncomeModal(false);
+            setEditingIncome(null);
+          }}
+        />
+      </Modal>
+
+      <Modal 
+        isOpen={showSalaryModal} 
+        onClose={() => setShowSalaryModal(false)}
+        title="Set Monthly Salary"
+      >
+        <SalaryFormModal 
+          monthlySalary={monthlySalary}
+          onSalaryUpdate={updateSalary}
+          onClose={() => setShowSalaryModal(false)}
+        />
+      </Modal>
 
       {/* Footer - Only show on home page */}
       {currentPage === 'home' && (
@@ -431,12 +526,14 @@ const AuthenticatedApp = () => {
   );
 };
 
-// Main App wrapper with AuthProvider and ThemeProvider
+// Main App wrapper with AuthProvider, ThemeProvider and CurrencyProvider
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppContent />
+        <CurrencyProvider>
+          <AppContent />
+        </CurrencyProvider>
       </AuthProvider>
     </ThemeProvider>
   );

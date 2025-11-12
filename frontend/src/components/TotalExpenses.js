@@ -1,6 +1,24 @@
 import React from 'react';
+import { useCurrency } from '../contexts/CurrencyContext';
 
-const TotalExpenses = ({ expenses }) => {
+const TotalExpenses = ({ expenses, groupCurrency = null }) => {
+  const { currencySymbol: defaultCurrencySymbol, formatCurrencyWithDecimals } = useCurrency();
+  
+  // Use group currency if provided
+  const currencySymbols = {
+    'USD': '$',
+    'EUR': '€',
+    'GBP': '£',
+    'JPY': '¥',
+    'AUD': 'A$',
+    'CAD': 'C$',
+    'CHF': '₣',
+    'CNY': '¥',
+    'INR': '₹',
+    'LKR': 'Rs'
+  };
+
+  const currencySymbol = groupCurrency ? currencySymbols[groupCurrency] : defaultCurrencySymbol;
   const totalAmount = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
   const getCategoryTotals = () => {
@@ -78,7 +96,7 @@ const TotalExpenses = ({ expenses }) => {
                 </div>
                 
                 <div className="text-3xl md:text-5xl font-black bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-1 md:mb-3">
-                  ${totalAmount.toFixed(2)}
+                  {formatCurrencyWithDecimals(totalAmount)}
                 </div>
                 <div className="text-base md:text-xl text-gray-800 font-bold mb-2 md:mb-4">
                   Total Expenses
@@ -130,7 +148,7 @@ const TotalExpenses = ({ expenses }) => {
                         </div>
                         <div className="text-right">
                           <div className="text-2xl font-black text-gray-900 group-hover:text-indigo-600 transition-colors duration-300">
-                            ${amount.toFixed(2)}
+                            {formatCurrencyWithDecimals(amount)}
                           </div>
                           <div className="text-sm font-bold text-gray-500 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full border border-white/30">
                             {percentage.toFixed(1)}%

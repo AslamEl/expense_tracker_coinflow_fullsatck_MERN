@@ -12,6 +12,7 @@ const Settings = () => {
     email: '',
     username: '',
     monthlySalary: 0,
+    currency: 'USD',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
@@ -33,6 +34,7 @@ const Settings = () => {
         email: user.email || '',
         username: user.username || '',
         monthlySalary: user.monthlySalary || user.monthlyIncome || 0,
+        currency: user.currency || 'USD',
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
@@ -60,7 +62,8 @@ const Settings = () => {
         lastName: formData.lastName,
         email: formData.email,
         username: formData.username,
-        monthlySalary: formData.monthlySalary
+        monthlySalary: formData.monthlySalary,
+        currency: formData.currency
       };
 
       const response = await axios.put('/api/auth/profile', profileData, {
@@ -359,6 +362,30 @@ const Settings = () => {
                     min="0"
                     className="w-full px-3 md:px-4 py-2 md:py-3 bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg md:rounded-xl focus:outline-none focus:ring-4 focus:ring-yellow-500/20 focus:border-yellow-400 transition-all duration-300 text-gray-900 text-xs md:text-base"
                   />
+                </div>
+
+                <div className="group">
+                  <label className="flex items-center text-xs md:text-sm font-bold text-gray-800 mb-2 md:mb-3">
+                    <svg className="w-5 md:w-6 h-5 md:h-6 bg-gradient-to-r from-purple-500 to-indigo-500 rounded flex items-center justify-center mr-2 text-white p-1 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM7 12c0-2.76 2.24-5 5-5s5 2.24 5 5-2.24 5-5 5-5-2.24-5-5z"/></svg>
+                    Currency
+                  </label>
+                  <select
+                    name="currency"
+                    value={formData.currency}
+                    onChange={handleChange}
+                    className="w-full px-3 md:px-4 py-2 md:py-3 bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg md:rounded-xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-400 transition-all duration-300 text-gray-900 text-xs md:text-base"
+                  >
+                    <option value="USD">USD ($) - US Dollar</option>
+                    <option value="EUR">EUR (€) - Euro</option>
+                    <option value="GBP">GBP (£) - British Pound</option>
+                    <option value="JPY">JPY (¥) - Japanese Yen</option>
+                    <option value="AUD">AUD (A$) - Australian Dollar</option>
+                    <option value="CAD">CAD (C$) - Canadian Dollar</option>
+                    <option value="CHF">CHF (₣) - Swiss Franc</option>
+                    <option value="CNY">CNY (¥) - Chinese Yuan</option>
+                    <option value="INR">INR (₹) - Indian Rupee</option>
+                    <option value="LKR">LKR (Rs) - Sri Lankan Rupee</option>
+                  </select>
                 </div>
 
                 <button

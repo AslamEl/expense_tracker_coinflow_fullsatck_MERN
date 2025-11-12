@@ -154,7 +154,7 @@ const groupSchema = new mongoose.Schema({
   currency: {
     type: String,
     default: 'USD',
-    enum: ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR']
+    enum: ['USD', 'EUR', 'GBP', 'JPY', 'AUD', 'CAD', 'CHF', 'CNY', 'INR', 'LKR']
   },
   isActive: {
     type: Boolean,

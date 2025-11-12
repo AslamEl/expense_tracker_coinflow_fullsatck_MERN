@@ -122,6 +122,93 @@ const deleteIncome = async (req, res) => {
   }
 };
 
+// @desc    Update income
+// @route   PUT /api/incomes/:id
+// @access  Private
+const updateIncome = async (req, res) => {
+  try {
+    const { description, amount, category, isRecurring, recurringFrequency } = req.body;
+
+    // Validate required fields
+    if (!description || !amount || !category) {
+      return res.status(400).json({
+        message: 'Please provide description, amount, and category'
+      });
+    }
+
+    // Validate amount is a positive number
+    if (isNaN(amount) || amount <= 0) {
+      return res.status(400).json({
+        message: 'Amount must be a positive number'
+      });
+    }
+
+    // Validate category
+    const validCategories = [
+      'Freelance',
+      'Part-time Job',
+      'Investment',
+      'Bonus',
+      'Gift',
+      'Rental',
+      'Business',
+      'Dividend',
+      'Interest',
+      'Side Hustle',
+      'Commission',
+      'Royalty',
+      'Other'
+    ];
+    
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({
+        message: 'Category must be one of the supported income categories'
+      });
+    }
+
+    // Validate recurring frequency if income is recurring
+    if (isRecurring && !recurringFrequency) {
+      return res.status(400).json({
+        message: 'Recurring frequency is required for recurring income'
+      });
+    }
+
+    // Find and check ownership
+    const income = await Income.findOne({
+      _id: req.params.id,
+      user: req.user._id
+    });
+
+    if (!income) {
+      return res.status(404).json({ message: 'Income not found or unauthorized' });
+    }
+
+    // Update the income
+    income.description = description.trim();
+    income.amount = parseFloat(amount);
+    income.category = category;
+    income.isRecurring = isRecurring || false;
+    income.recurringFrequency = isRecurring ? recurringFrequency : undefined;
+
+    await income.save();
+    await income.populate('user', 'firstName lastName username');
+
+    res.json(income);
+  } catch (error) {
+    console.error('Error updating income:', error);
+
+    // Handle invalid ObjectId format
+    if (error.name === 'CastError') {
+      return res.status(404).json({ message: 'Income not found' });
+    }
+
+    res.status(500).json({ 
+      message: 'Server Error', 
+      error: error.message 
+    });
+  }
+};
+
 // @desc    Get income statistics
 // @route   GET /api/incomes/stats
 // @access  Private
@@ -157,5 +244,6 @@ module.exports = {
   getIncomes,
   createIncome,
   deleteIncome,
+  updateIncome,
   getIncomeStats
 };

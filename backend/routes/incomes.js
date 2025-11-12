@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getIncomes, createIncome, deleteIncome, getIncomeStats } = require('../controllers/incomeController');
+const { getIncomes, createIncome, deleteIncome, updateIncome, getIncomeStats } = require('../controllers/incomeController');
 const { authenticateToken } = require('../middleware/auth');
 
 // All routes are protected
@@ -20,6 +20,11 @@ router.post('/', createIncome);
 // @desc    Get income statistics
 // @access  Private
 router.get('/stats', getIncomeStats);
+
+// @route   PUT /api/incomes/:id
+// @desc    Update an income
+// @access  Private
+router.put('/:id', updateIncome);
 
 // @route   DELETE /api/incomes/:id
 // @desc    Delete an income

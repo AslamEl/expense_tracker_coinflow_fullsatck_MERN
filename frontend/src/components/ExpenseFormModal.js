@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { Icons } from '../utils/svgIcons';
+import { useCurrency } from '../contexts/CurrencyContext';
 
-const ExpenseFormModal = ({ onAddExpense, onClose }) => {
+const ExpenseFormModal = ({ onAddExpense, onClose, editingExpense = null, onUpdateExpense = null }) => {
+  const { currencySymbol } = useCurrency();
+  
   const [formData, setFormData] = useState({
-    description: '',
-    amount: '',
-    category: 'Other'
+    description: editingExpense?.description || '',
+    amount: editingExpense?.amount || '',
+    category: editingExpense?.category || 'Other'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -43,11 +46,21 @@ const ExpenseFormModal = ({ onAddExpense, onClose }) => {
     setIsSubmitting(true);
     
     try {
-      await onAddExpense({
-        description: formData.description.trim(),
-        amount: parseFloat(formData.amount),
-        category: formData.category
-      });
+      if (editingExpense && onUpdateExpense) {
+        // Update mode
+        await onUpdateExpense(editingExpense._id, {
+          description: formData.description.trim(),
+          amount: parseFloat(formData.amount),
+          category: formData.category
+        });
+      } else {
+        // Add mode
+        await onAddExpense({
+          description: formData.description.trim(),
+          amount: parseFloat(formData.amount),
+          category: formData.category
+        });
+      }
       
       // Reset form and close modal
       setFormData({
@@ -57,8 +70,8 @@ const ExpenseFormModal = ({ onAddExpense, onClose }) => {
       });
       onClose();
     } catch (error) {
-      console.error('Error adding expense:', error);
-      alert('Failed to add expense. Please try again.');
+      console.error('Error processing expense:', error);
+      alert('Failed to process expense. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -72,14 +85,18 @@ const ExpenseFormModal = ({ onAddExpense, onClose }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
           </svg>
         </div>
-        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2">Add Expense</h3>
-        <p className="text-xs md:text-base text-gray-600">Track your spending and categorize expenses</p>
+        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2">
+          {editingExpense ? 'Edit Expense' : 'Add Expense'}
+        </h3>
+        <p className="text-xs md:text-base text-gray-600">
+          {editingExpense ? 'Update your expense details' : 'Track your spending and categorize expenses'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:gap-6">
         <div className="group">
           <label htmlFor="description" className="flex items-center text-xs md:text-sm font-bold text-gray-800 mb-2 md:mb-3">
-            <div className="w-5 md:w-6 h-5 md:h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-2 text-white text-xs">{Icons.pdf}</div>
+            <span className="mr-2 text-lg">📝</span>
             Description
           </label>
           <div className="relative">
@@ -99,10 +116,13 @@ const ExpenseFormModal = ({ onAddExpense, onClose }) => {
 
         <div className="group">
           <label htmlFor="amount" className="flex items-center text-xs md:text-sm font-bold text-gray-800 mb-2 md:mb-3">
-            <div className="w-5 md:w-6 h-5 md:h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mr-2 text-white text-xs">{Icons.money}</div>
-            Amount ($)
+            <span className="mr-2 text-lg">💰</span>
+            Amount ({currencySymbol})
           </label>
           <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 md:pl-6 flex items-center pointer-events-none">
+              <span className="text-gray-500 font-bold text-xs md:text-base">{currencySymbol}</span>
+            </div>
             <input
               type="number"
               id="amount"
@@ -112,7 +132,7 @@ const ExpenseFormModal = ({ onAddExpense, onClose }) => {
               placeholder="0.00"
               step="0.01"
               min="0.01"
-              className="w-full px-3 md:px-6 py-2 md:py-4 bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg md:rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-400 transition-all duration-300 text-gray-900 placeholder-gray-500 shadow-lg hover:shadow-xl group-hover:bg-white/80 text-xs md:text-base"
+              className="w-full pl-6 md:pl-12 pr-3 md:pr-6 py-2 md:py-4 bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg md:rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-400 transition-all duration-300 text-gray-900 placeholder-gray-500 shadow-lg hover:shadow-xl group-hover:bg-white/80 text-xs md:text-base"
               required
             />
             <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 rounded-lg md:rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -122,7 +142,7 @@ const ExpenseFormModal = ({ onAddExpense, onClose }) => {
 
       <div className="group">
         <label htmlFor="category" className="flex items-center text-xs md:text-sm font-bold text-gray-800 mb-2 md:mb-3">
-          <div className="w-5 md:w-6 h-5 md:h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2 text-white text-xs">{Icons.shopping}</div>
+          <span className="mr-2 text-lg">🛒</span>
           Category
         </label>
         <div className="relative">
@@ -187,13 +207,13 @@ const ExpenseFormModal = ({ onAddExpense, onClose }) => {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Adding...
+              {editingExpense ? 'Updating...' : 'Adding...'}
             </div>
           ) : (
             <div className="flex items-center justify-center">
               <span className="mr-1 md:mr-2 text-base md:text-xl">✨</span>
-              <span className="hidden xs:inline">Add Expense</span>
-              <span className="xs:hidden">Add</span>
+              <span className="hidden xs:inline">{editingExpense ? 'Update Expense' : 'Add Expense'}</span>
+              <span className="xs:hidden">{editingExpense ? 'Update' : 'Add'}</span>
             </div>
           )}
         </button>

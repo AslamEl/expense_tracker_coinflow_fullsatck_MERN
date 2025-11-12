@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Icons } from '../utils/svgIcons';
+import { useCurrency } from '../contexts/CurrencyContext';
 
-const IncomeFormModal = ({ onAddIncome, onClose }) => {
+const IncomeFormModal = ({ onAddIncome, onClose, editingIncome = null, onUpdateIncome = null }) => {
+  const { currencySymbol } = useCurrency();
   const [formData, setFormData] = useState({
-    description: '',
-    amount: '',
-    category: 'Other',
-    isRecurring: false,
-    recurringFrequency: 'monthly'
+    description: editingIncome?.description || '',
+    amount: editingIncome?.amount || '',
+    category: editingIncome?.category || 'Other',
+    isRecurring: editingIncome?.isRecurring || false,
+    recurringFrequency: editingIncome?.recurringFrequency || 'monthly'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -70,13 +72,25 @@ const IncomeFormModal = ({ onAddIncome, onClose }) => {
     setIsSubmitting(true);
     
     try {
-      await onAddIncome({
-        description: formData.description.trim(),
-        amount: parseFloat(formData.amount),
-        category: formData.category,
-        isRecurring: formData.isRecurring,
-        recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined
-      });
+      if (editingIncome && onUpdateIncome) {
+        // Update mode
+        await onUpdateIncome(editingIncome._id, {
+          description: formData.description.trim(),
+          amount: parseFloat(formData.amount),
+          category: formData.category,
+          isRecurring: formData.isRecurring,
+          recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined
+        });
+      } else {
+        // Add mode
+        await onAddIncome({
+          description: formData.description.trim(),
+          amount: parseFloat(formData.amount),
+          category: formData.category,
+          isRecurring: formData.isRecurring,
+          recurringFrequency: formData.isRecurring ? formData.recurringFrequency : undefined
+        });
+      }
       
       // Reset form and close modal
       setFormData({
@@ -88,8 +102,8 @@ const IncomeFormModal = ({ onAddIncome, onClose }) => {
       });
       onClose();
     } catch (error) {
-      console.error('Error adding income:', error);
-      alert('Failed to add income. Please try again.');
+      console.error('Error processing income:', error);
+      alert('Failed to process income. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -103,14 +117,18 @@ const IncomeFormModal = ({ onAddIncome, onClose }) => {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
           </svg>
         </div>
-        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2">Add Income</h3>
-        <p className="text-xs md:text-base text-gray-600">Record additional income sources like freelance work, bonuses, or investments</p>
+        <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-1 md:mb-2">
+          {editingIncome ? 'Edit Income' : 'Add Income'}
+        </h3>
+        <p className="text-xs md:text-base text-gray-600">
+          {editingIncome ? 'Update your income details' : 'Record additional income sources like freelance work, bonuses, or investments'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:gap-6">
         <div className="group">
           <label htmlFor="description" className="flex items-center text-xs md:text-sm font-bold text-gray-800 mb-2 md:mb-3">
-            <span className="w-5 md:w-6 h-5 md:h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center mr-2 text-white text-xs">📝</span>
+            <span className="mr-2 text-lg">📝</span>
             Description
           </label>
           <div className="relative">
@@ -130,10 +148,13 @@ const IncomeFormModal = ({ onAddIncome, onClose }) => {
 
         <div className="group">
           <label htmlFor="amount" className="flex items-center text-xs md:text-sm font-bold text-gray-800 mb-2 md:mb-3">
-            <span className="w-5 md:w-6 h-5 md:h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mr-2 text-white text-xs">💰</span>
-            Amount ($)
+            <span className="mr-2 text-lg">💰</span>
+            Amount ({currencySymbol})
           </label>
           <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 md:pl-6 flex items-center pointer-events-none">
+              <span className="text-gray-500 font-bold text-xs md:text-base">{currencySymbol}</span>
+            </div>
             <input
               type="number"
               id="amount"
@@ -143,7 +164,7 @@ const IncomeFormModal = ({ onAddIncome, onClose }) => {
               placeholder="0.00"
               step="0.01"
               min="0.01"
-              className="w-full px-3 md:px-6 py-2 md:py-4 bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg md:rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-400 transition-all duration-300 text-gray-900 placeholder-gray-500 shadow-lg hover:shadow-xl group-hover:bg-white/80 text-xs md:text-base"
+              className="w-full pl-6 md:pl-12 pr-3 md:pr-6 py-2 md:py-4 bg-white/60 backdrop-blur-sm border border-gray-200/50 rounded-lg md:rounded-2xl focus:outline-none focus:ring-4 focus:ring-green-500/20 focus:border-green-400 transition-all duration-300 text-gray-900 placeholder-gray-500 shadow-lg hover:shadow-xl group-hover:bg-white/80 text-xs md:text-base"
               required
             />
             <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 to-emerald-500/5 rounded-lg md:rounded-2xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -153,7 +174,7 @@ const IncomeFormModal = ({ onAddIncome, onClose }) => {
 
       <div className="group">
         <label htmlFor="category" className="flex items-center text-xs md:text-sm font-bold text-gray-800 mb-2 md:mb-3">
-          <span className="w-5 md:w-6 h-5 md:h-6 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-2 text-white text-xs">🏷️</span>
+          <span className="mr-2 text-lg">🏷️</span>
           Category
         </label>
         <div className="relative">
@@ -202,7 +223,8 @@ const IncomeFormModal = ({ onAddIncome, onClose }) => {
         
         {formData.isRecurring && (
           <div className="mt-3 md:mt-4">
-            <label htmlFor="recurringFrequency" className="block text-xs md:text-sm font-medium text-blue-900 mb-2">
+            <label htmlFor="recurringFrequency" className="flex items-center text-xs md:text-sm font-medium text-blue-900 mb-2">
+              <span className="mr-2 text-lg">🔄</span>
               Frequency
             </label>
             <select
@@ -245,13 +267,13 @@ const IncomeFormModal = ({ onAddIncome, onClose }) => {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Adding...
+              {editingIncome ? 'Updating...' : 'Adding...'}
             </div>
           ) : (
             <div className="flex items-center justify-center">
               <span className="mr-1 md:mr-2 text-base md:text-xl">💰</span>
-              <span className="hidden xs:inline">Add Income</span>
-              <span className="xs:hidden">Add</span>
+              <span className="hidden xs:inline">{editingIncome ? 'Update Income' : 'Add Income'}</span>
+              <span className="xs:hidden">{editingIncome ? 'Update' : 'Add'}</span>
             </div>
           )}
         </button>

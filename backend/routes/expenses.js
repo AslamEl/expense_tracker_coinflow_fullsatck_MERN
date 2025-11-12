@@ -4,7 +4,8 @@ const { authenticateToken } = require('../middleware/auth');
 const {
   getExpenses,
   createExpense,
-  deleteExpense
+  deleteExpense,
+  updateExpense
 } = require('../controllers/expenseController');
 
 // All expense routes require authentication
@@ -15,6 +16,9 @@ router.get('/', getExpenses);
 
 // @route  POST /api/expenses
 router.post('/', createExpense);
+
+// @route  PUT /api/expenses/:id
+router.put('/:id', updateExpense);
 
 // @route  DELETE /api/expenses/:id
 router.delete('/:id', deleteExpense);
